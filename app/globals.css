@@ -248,3 +248,24 @@ a {
     animation: none !important;
   }
 }
+
+/* ---------- ?debug=1: what the last tapped song did ---------- */
+
+.song-debug {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  max-height: 40vh;
+  overflow: auto;
+  padding: 0.45rem 0.7rem;
+  background: rgb(20 16 12 / 0.92);
+  color: #f0e4c9;
+  font: 12px/1.45 ui-monospace, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
+.song-debug b {
+  color: #ffd27a;
+}

@@ -5,7 +5,11 @@ import { artistsOf, findMp3 } from "@/lib/songs";
 // It goes through this site because Deezer's files cannot be fetched from a page on
 // another address, and so the lookup needs no key in the browser. Only the six songs
 // in content/site.ts can be asked for, by number. Byte ranges are passed along,
-// because Safari will not play audio without them.
+// because Safari will not play audio without them. Deezer's file addresses
+// stop working after a while, so they are never remembered: each request looks the song
+// up again. Only the sound itself may be kept, by the visitor's own browser, for ten
+// minutes. It runs on the normal Node.js runtime and asks Deezer directly, so it works
+// the same on Vercel as on a laptop.
 
 export async function GET(request: Request) {
   const i = Number(new URL(request.url).searchParams.get("i"));

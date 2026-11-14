@@ -2,7 +2,7 @@ import { cacheLife } from "next/cache";
 import { connection } from "next/server";
 import { contact } from "@/content/site";
 
-// The last year of contributions for the graph on page 2.
+// The last year of contributions for the graph on page 3.
 // Needs GITHUB_TOKEN (read-only). Without it, or if GitHub is down, the page shows a
 // short handwritten note instead.
 

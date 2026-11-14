@@ -5,6 +5,7 @@ import Intro from "@/components/intro/Intro";
 import FlatGarden from "@/components/scene/FlatGarden";
 import GardenScene from "@/components/scene/GardenScene";
 import MuteButton from "@/components/ui/MuteButton";
+import SongDebug from "@/components/ui/SongDebug";
 import { pickQuality } from "@/lib/quality";
 import { sound } from "@/lib/sound";
 
@@ -49,6 +50,7 @@ export default function Stage() {
       {which === "flat" && <FlatGarden shown={shown} calm={calm} />}
       {phase !== "garden" && <Intro still={calm} onDone={onDone} />}
       <MuteButton />
+      <SongDebug />
     </main>
   );
 }

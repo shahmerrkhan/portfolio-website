@@ -4,24 +4,24 @@ import type { ComponentType, PointerEvent, Ref } from "react";
 import { pages } from "@/content/site";
 import type { Stop } from "@/lib/scrollPlan";
 import { HiRight } from "./Page1";
-import { WorkLeft, WorkRight } from "./Page2";
-import { BelieveLeft, BelieveRight } from "./Page3";
-import { FunLeft, FunRight } from "./Page4";
-import { GuestLeft, GuestRight } from "./Page5";
-import { StoryLeft, StoryRight } from "./Page6";
+import { StoryLeft, StoryRight } from "./Page2";
+import { WorkLeft, WorkRight } from "./Page3";
+import { BelieveLeft, BelieveRight } from "./Page4";
+import { FunLeft, FunRight } from "./Page5";
+import { GuestLeft, GuestRight } from "./Page6";
 import { SecretsLeft, SecretsRight } from "./Page7";
 
-// The seven places the book opens at. Left is the left-hand page, right the right-hand
+// The seven places the book opens at, in the same order as `pages` in content/site.ts. Left is the left-hand page, right the right-hand
 // one. The first has no left page: the inside of the cover is there.
 // `title` marks a left page that only carries the page's name; on a tall screen, where
 // one page is in view at a time, that page is skipped and the name goes on the right.
 const SIDES: { Left?: ComponentType; Right: ComponentType; title?: boolean }[] = [
   { Right: HiRight },
+  { Left: StoryLeft, Right: StoryRight, title: true },
   { Left: WorkLeft, Right: WorkRight },
   { Left: BelieveLeft, Right: BelieveRight },
   { Left: FunLeft, Right: FunRight },
   { Left: GuestLeft, Right: GuestRight },
-  { Left: StoryLeft, Right: StoryRight, title: true },
   { Left: SecretsLeft, Right: SecretsRight, title: true },
 ];
 

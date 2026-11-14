@@ -28,11 +28,11 @@ You start above the clouds. Tap once, a short voiceover plays with captions, and
 There are seven pages:
 
 1. **Hi**, who I am and what I'm doing right now
-2. **Work**, the things I've built, where I've worked and my GitHub
-3. **What I believe**
-4. **Fun**, songs, books and hobbies
-5. **Guestbook**, leave me a note
-6. **My story**
+2. **My story**
+3. **Work**, the things I've built, where I've worked and my GitHub
+4. **What I believe**
+5. **Fun**, songs, books and hobbies
+6. **Guestbook**, leave me a note
 7. **Secrets**, for whatever you found in the garden
 
 Birds play quietly in the background once you've tapped in, and there's a tag in the corner to mute them. The skip intro button is there from the very first screen if you just want the book.

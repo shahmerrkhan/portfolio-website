@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import { db, senderOf, type NoteRow } from "@/lib/db";
 
-// The guestbook on page 5. Anyone can read the approved notes and leave a new one.
+// The guestbook on page 6. Anyone can read the approved notes and leave a new one.
 // A new note stays hidden until it is approved on /admin.
 
 const PER_HOUR = 3; // notes one sender may leave in an hour

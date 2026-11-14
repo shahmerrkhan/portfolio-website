@@ -17,6 +17,10 @@ const GIVE_UP_AFTER = 5; // seconds to wait for the voice to start before using 
 const CLOUD_SPEED = 13; // frames a second; under the 24 they were rendered at, so they drift
 const LOOP_BLEND = 20; // frames over which the end of the cloud clip melts into its start
 const PORTAL_FPS = 24;
+// The portal clip is five seconds: the ring grows, we go through it at about 2.1s, then
+// the tunnel. The swoosh starts here, swells for a second so its peak lands on the
+// ring, and has died away by 3.6s, before the garden comes up.
+const SWOOSH_AT = 1.1;
 
 type Stage = "gate" | "clouds" | "portal" | "out";
 
@@ -78,11 +82,13 @@ export default function Intro({ still, onDone }: { still: boolean; onDone: () =>
       if (still || portal.arrived < portal.frames * 0.5) return finish();
       portalBegan = performance.now();
       go("portal");
+      sound.swoosh(SWOOSH_AT); // the voice has finished by now, so they never overlap
     };
 
     actions.current = {
       begin: () => {
         if (now !== "gate") return;
+        sound.unlock(); // this tap is what lets the swoosh and the garden sound later
         began = performance.now();
         go("clouds");
         if (voiceOk) {
@@ -104,7 +110,10 @@ export default function Intro({ still, onDone }: { still: boolean; onDone: () =>
           void start();
         }
       },
-      skip: finish,
+      skip: () => {
+        sound.stopSwoosh(); // skipped part-way through the portal: the swoosh goes too
+        finish();
+      },
     };
 
     const tick = (time: number) => {

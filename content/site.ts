@@ -88,11 +88,12 @@ export const experience: Experience[] = [
     logo: { src: "/logos/magic-hour.svg" },
   },
   {
-    name: "Faculty of Engineering, McMaster University",
+    name: "McMaster University",
     role: "Leader In Training (LIT)",
     when: "Aug 2026, 1 month",
     where: "Hamilton, Ontario",
     line: "Mentored Grade 6-8 students one-on-one at McMaster's summer engineering camp. Ran robotics and Arduino labs.",
+    logo: { src: "/logos/mcmaster.svg" },
   },
   {
     name: "Prettiflow",
@@ -100,6 +101,7 @@ export const experience: Experience[] = [
     when: "May 2026 to Jun 2026, 2 months",
     where: "Remote",
     line: "One of 200 builders picked for Cohort 1. Built and shipped Spiral, a goal tracking app, in one week.",
+    logo: { src: "/logos/prettiflow.svg" },
   },
   {
     name: "Unbound",
@@ -191,11 +193,11 @@ export const secrets = [
 // cannot load. None of these are facts about Shahmeer; change them freely.
 export const pages = [
   { id: "hi", tab: "hi", name: "intro" },
+  { id: "story", tab: "story", name: "my story" },
   { id: "work", tab: "work", name: "projects, experience and GitHub" },
   { id: "believe", tab: "believe", name: "what I believe" },
   { id: "fun", tab: "fun", name: "songs, books and hobbies" },
   { id: "guestbook", tab: "guestbook", name: "guestbook" },
-  { id: "story", tab: "story", name: "my story" },
   { id: "secrets", tab: "secrets", name: "garden secrets" },
 ] as const;
 
@@ -217,6 +219,7 @@ export const words = {
   noPreview: "no preview",
   playing: "playing",
   songFailed: "This one won't play in your browser.",
+  songAgain: "tap again",
   books: "Some books I've read",
   hobbies: "hobbies",
   guestbook: "guestbook",
