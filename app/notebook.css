@@ -1,0 +1,881 @@
+/* The text on the notebook's pages.
+ *
+ * The script (components/pages/bind.ts) moves each piece onto its page and sets
+ * --pw / --ph (right-hand page size) and --lw (left-hand page width) on .notebook.
+ *
+ * Everything on a page is blended onto the paper underneath with "multiply": ink
+ * darkens the paper, and the leaf shade and the daylight in the scene still fall
+ * across the writing and the notes. That is why each piece is position: fixed on
+ * its own and nothing above it is: blending stops at any positioned wrapper.
+ */
+
+.notebook {
+  --ink-blue: #24406e;
+  --pencil: #5b5348;
+  color: var(--ink);
+  /* The type is a fixed share of the page's width, like print: the page looks the same
+   * on every screen, only bigger or smaller. */
+  font-size: calc(var(--pw, 360px) * 0.05);
+  line-height: 1.22;
+  /* ink sinks into paper a little and spreads */
+  text-shadow: 0 0 0.035em rgba(42, 30, 20, 0.5);
+}
+
+.spread {
+  visibility: hidden;
+}
+
+/* one piece per page, moved onto its page by the script */
+.side {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: var(--ph);
+  overflow: hidden;
+  mix-blend-mode: multiply;
+  will-change: transform, opacity;
+}
+
+.side.right {
+  width: var(--pw);
+  transform-origin: 0 0;
+}
+
+/* the left-hand page is held by its right edge, where the hinge is */
+.side.left {
+  width: var(--lw);
+  transform-origin: 100% 0;
+}
+
+/* Real margins all round, a little more at the gutter. --fit is set by the script when a
+ * page holds more than fits: the type shrinks until it does, so nothing leaves the paper. */
+.side > .inner {
+  font-size: calc(1em * var(--fit, 1));
+  overflow-wrap: break-word;
+}
+
+.side.right > .inner {
+  padding: 9% 9.5% 9% 11%;
+}
+
+.side.left > .inner {
+  padding: 9% 11% 9% 9.5%;
+}
+
+/* Tall screens show one page at a time. A left page that only carries the page's name
+ * is skipped there, and the name is written at the top of the right page instead. */
+.only-single {
+  display: none;
+}
+
+.notebook[data-single="true"] .only-single {
+  display: block;
+  margin-bottom: 0.7em;
+}
+
+.notebook[data-single="true"] .side.title-only,
+.notebook[data-single="true"] .wide-only {
+  display: none;
+}
+
+/* ---------- shared pieces ---------- */
+
+.notebook ul,
+.notebook ol {
+  list-style: none;
+}
+
+.notebook a {
+  color: var(--ink-blue);
+  text-underline-offset: 0.15em;
+}
+
+/* small label over a group of things */
+.heading {
+  display: inline-block;
+  margin-bottom: 0.7em;
+  font-family: var(--font-scrawl);
+  font-size: 1.6em;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--ink-soft);
+  border-bottom: 2px solid currentColor;
+  border-radius: 0 0 40% 60% / 0 0 4px 3px;
+  transform: rotate(-1.5deg);
+}
+
+.heading:not(:first-child) {
+  margin-top: 0.9em;
+}
+
+/* the big name of a page, on the left-hand side */
+.title {
+  font-family: var(--font-script);
+  font-size: 1.45em;
+  font-weight: 400;
+  line-height: 1.5;
+  transform: rotate(-3deg);
+  transform-origin: 0 50%;
+}
+
+.p-title {
+  padding-top: 26%;
+  padding-left: 4%;
+}
+
+.quiet {
+  font-family: var(--font-scrawl);
+  font-size: 1.3em;
+  line-height: 1.05;
+  color: var(--ink-soft);
+}
+
+/* a piece of paper stuck on the page */
+.note {
+  position: relative;
+  padding: 0.75em 0.9em 0.8em;
+  background: var(--paper-note, #f1e8d2);
+  transform: rotate(var(--tilt, 0deg));
+  box-shadow:
+    0 1px 1px rgba(60, 40, 20, 0.3),
+    2px 5px 9px rgba(50, 32, 14, 0.3);
+}
+
+/* paper answers a touch: a stuck note sways and settles, a hung one swings from its pin */
+.note.touched {
+  animation: sway 0.9s ease-out;
+}
+
+.hung.touched {
+  animation: swing 1.3s ease-out;
+}
+
+@keyframes sway {
+  20% {
+    rotate: 1.5deg;
+  }
+  45% {
+    rotate: -1deg;
+  }
+  70% {
+    rotate: 0.5deg;
+  }
+}
+
+@keyframes swing {
+  15% {
+    rotate: 4.5deg;
+  }
+  38% {
+    rotate: -3.2deg;
+  }
+  60% {
+    rotate: 1.8deg;
+  }
+  80% {
+    rotate: -0.8deg;
+  }
+}
+
+.note.legal {
+  --paper-note: #f1e3a0;
+}
+.note.blue {
+  --paper-note: #d3e0e9;
+}
+.note.pink {
+  --paper-note: #efd0c7;
+}
+.note.kraft {
+  --paper-note: #d6b98b;
+}
+.note.plain {
+  --paper-note: #f3ecda;
+}
+.note.ruled {
+  --paper-note: #efe9da;
+  background-image: repeating-linear-gradient(
+    transparent 0 calc(1.22em - 1px),
+    rgba(60, 100, 150, 0.4) calc(1.22em - 1px) 1.22em
+  );
+  background-position: 0 0.55em;
+}
+
+.note.small {
+  font-size: 0.93em;
+  padding: 0.6em 0.75em 0.65em;
+}
+
+/* a strip of tape across the top edge */
+.taped::before {
+  content: "";
+  position: absolute;
+  top: -0.5em;
+  left: 50%;
+  width: 3.8em;
+  height: 1.1em;
+  background: rgba(205, 190, 140, 0.72);
+  clip-path: polygon(0 0, 4% 30%, 0 55%, 4% 80%, 0 100%, 100% 100%, 96% 75%, 100% 50%, 96% 25%, 100% 0);
+  transform: translateX(-50%) rotate(-3deg);
+}
+
+/* a pin through the top */
+.pinned::before {
+  content: "";
+  position: absolute;
+  top: -0.3em;
+  left: 50%;
+  width: 0.72em;
+  height: 0.72em;
+  margin-left: -0.36em;
+  border-radius: 50%;
+  background: #a3312a;
+  box-shadow:
+    inset 0.12em 0.12em 0 rgba(255, 190, 170, 0.55),
+    inset -0.1em -0.12em 0 rgba(60, 10, 5, 0.45),
+    0.14em 0.22em 0.2em rgba(30, 15, 5, 0.5);
+}
+
+.note h3 {
+  font-family: var(--font-script);
+  font-size: 0.92em;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* ---------- page 1 ---------- */
+
+.p-hi {
+  padding-top: 14%;
+}
+
+.hi-hello {
+  font-family: var(--font-script);
+  font-size: 1.7em;
+  font-weight: 400;
+  line-height: 1.4;
+  transform: rotate(-3deg);
+  transform-origin: 0 50%;
+}
+
+.scribble {
+  display: block;
+  width: 64%;
+  margin-top: 0.1em;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  transform: rotate(-3deg);
+}
+
+.hi-line {
+  margin: 1.3em 0 1.9em;
+  font-size: 1.55em;
+  line-height: 1.16;
+}
+
+.hi-work {
+  width: fit-content;
+  margin-left: 10%;
+  font-family: var(--font-scrawl);
+  font-size: 1.5em;
+  line-height: 1.05;
+}
+
+/* ---------- page 2 ---------- */
+
+.projects {
+  display: grid;
+  gap: 0.85em;
+}
+
+.projects li {
+  padding: 0.45em 0.7em 0.5em;
+  line-height: 1.14;
+}
+
+.projects li:nth-child(even) {
+  margin-left: 4%;
+}
+.projects li:nth-child(odd) {
+  margin-right: 4%;
+}
+
+.p-work .heading {
+  margin-bottom: 0.5em;
+}
+
+/* the first project is the one to notice */
+.projects .lead {
+  font-size: 1.06em;
+}
+
+/* the second-place label: a silver sticker */
+.silver {
+  position: absolute;
+  top: 0.5em;
+  right: 0.5em;
+  padding: 0.1em 0.55em 0.16em;
+  background: #c3c7cd;
+  background-image: linear-gradient(105deg, #b4b9c0 0 18%, #eceef0 34%, #b9bec5 52%, #dfe2e5 70%, #a9aeb6);
+  border: 1px solid rgba(40, 45, 55, 0.45);
+  color: #262b33;
+  font-size: 0.86em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  transform: rotate(4deg);
+  box-shadow: 1px 2px 3px rgba(30, 20, 10, 0.35);
+}
+
+.jobs {
+  display: grid;
+  gap: 0.9em;
+}
+
+/* a small note hanging from a pin by two strings */
+.hung {
+  width: 88%;
+  transform: rotate(var(--tilt, 0deg));
+  transform-origin: 50% 0;
+}
+
+.hung:nth-child(even) {
+  margin-left: auto;
+}
+
+.hanger {
+  display: block;
+  width: 62%;
+  height: 1.5em;
+  margin: 0 auto -1px;
+  overflow: visible;
+}
+
+.hanger path {
+  fill: none;
+  stroke: #5d4630;
+  stroke-width: 1.3;
+  vector-effect: non-scaling-stroke;
+}
+
+.hanger circle {
+  fill: var(--brass-dark);
+}
+
+.role {
+  display: block;
+  margin-bottom: 0.15em;
+  font-family: var(--font-scrawl);
+  font-size: 1.25em;
+  line-height: 1;
+  color: var(--ink-blue);
+}
+
+.squares {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 0.4em;
+}
+
+.squares path {
+  stroke: rgba(60, 45, 25, 0.6);
+  stroke-width: 0.7;
+  stroke-linejoin: round;
+}
+
+/* ---------- page 3 ---------- */
+
+.p-believe ul {
+  display: grid;
+  gap: 1.3em;
+  padding-top: 1.4em;
+}
+
+.p-believe li {
+  font-size: 1.65em;
+  font-weight: 600;
+  line-height: 1.1;
+  transform: rotate(var(--tilt, 0deg));
+  transform-origin: 0 50%;
+}
+
+.p-believe li:nth-child(1) {
+  font-size: 1.75em;
+}
+
+.p-believe li:nth-child(2) {
+  padding-left: 9%;
+  font-family: var(--font-scrawl);
+  font-size: 2.05em;
+  font-weight: 400;
+  line-height: 0.95;
+  color: var(--ink-blue);
+}
+
+.p-believe li:nth-child(3) {
+  padding-left: 4%;
+}
+
+/* ---------- page 4 ---------- */
+
+.songs {
+  display: grid;
+  gap: 0.95em;
+}
+
+.song {
+  width: 92%;
+  padding: 0;
+  transition: scale 0.2s cubic-bezier(0.3, 1.7, 0.5, 1);
+}
+
+.song:nth-child(even) {
+  margin-left: auto;
+}
+
+/* Three columns that cannot run into each other: the cover, the words (which wrap
+ * inside their own column), the play mark. The whole slip is the button. */
+.song-row {
+  display: grid;
+  grid-template-columns: 2.6em minmax(0, 1fr) 2.2em;
+  align-items: center;
+  gap: 0.6em;
+  width: 100%;
+  padding: 0.45em 0.6em 0.45em 0.5em;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.song:has(button:active) {
+  scale: 0.97;
+}
+
+.song img,
+.song .no-art {
+  display: block;
+  width: 2.6em;
+  height: 2.6em;
+  background: #b9ab8c;
+}
+
+.song-words {
+  min-width: 0;
+  display: grid;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.song-words strong {
+  font-size: 1.1em;
+}
+
+.song-words span {
+  font-family: var(--font-scrawl);
+  font-size: 1.12em;
+  color: var(--ink-soft);
+}
+
+.song-words em {
+  font-family: var(--font-scrawl);
+  font-style: normal;
+  font-size: 1.05em;
+  color: var(--pencil);
+}
+
+.song-words em.now {
+  color: var(--ink-blue);
+}
+
+/* the slip of the song that is playing goes a shade bluer */
+.song[data-playing="true"] {
+  --paper-note: #d9e3ea;
+}
+
+.play {
+  display: block;
+  width: 2.2em;
+  height: 2.2em;
+}
+
+.play .ring {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.6;
+  opacity: 0.55;
+}
+
+/* fills round as the half minute plays */
+.play .ring.gone {
+  opacity: 1;
+  stroke: var(--ink-blue);
+  stroke-width: 3;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+.play .icon {
+  fill: var(--ink);
+}
+
+.shelves {
+  display: grid;
+  gap: 0.9em;
+}
+
+/* a board with ten spines standing on it */
+.shelf {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.3%;
+  height: 4.4em;
+  padding: 0 2.5%;
+  border-bottom: 0.4em solid #6f4a2a;
+  box-shadow: 0 0.4em 0.3em -0.22em rgba(40, 22, 6, 0.55);
+}
+
+.shelf li {
+  position: relative;
+  flex: var(--thick) 1 0;
+  height: var(--tall);
+  background: var(--cloth);
+  border-radius: 2px 2px 0 0;
+  box-shadow:
+    inset -0.22em 0 0.25em rgba(0, 0, 0, 0.32),
+    inset 0.12em 0 0.1em rgba(255, 255, 255, 0.14);
+  transform: rotate(var(--lean));
+  transform-origin: 50% 100%;
+  transition: transform 0.18s ease;
+}
+
+/* the gilt bands every cloth spine has */
+.shelf li::before,
+.shelf li::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(226, 196, 120, 0.85);
+}
+.shelf li::before {
+  top: 13%;
+}
+.shelf li::after {
+  bottom: 15%;
+}
+
+.shelf button {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  z-index: 1;
+}
+
+/* the picked book is pulled a little way out */
+.shelf li:has(button[aria-pressed="true"]),
+.shelf li:hover {
+  transform: rotate(var(--lean)) translateY(-0.55em);
+}
+
+.book-note {
+  width: fit-content;
+  max-width: 90%;
+  margin: 1.1em auto 0;
+  display: grid;
+  line-height: 1.1;
+}
+
+.book-note[hidden] {
+  display: none;
+}
+
+.book-note span {
+  font-family: var(--font-scrawl);
+  font-size: 1.2em;
+  color: var(--ink-soft);
+}
+
+.hobbies {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5em 1em;
+}
+
+.hobbies li {
+  transform: rotate(var(--tilt, 0deg));
+  font-weight: 600;
+}
+
+.hobbies li[data-hand="1"] {
+  font-family: var(--font-scrawl);
+  font-size: 1.35em;
+  font-weight: 400;
+  line-height: 0.95;
+  color: var(--ink-blue);
+}
+
+.hobbies li[data-hand="2"] {
+  font-family: var(--font-script);
+  font-size: 0.74em;
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+/* ---------- page 5 ---------- */
+
+.guest-notes {
+  display: grid;
+  gap: 1.2em;
+}
+
+.guest-notes li {
+  width: 88%;
+  overflow-wrap: anywhere;
+}
+
+.guest-notes li:nth-child(even) {
+  margin-left: auto;
+}
+
+.signed {
+  display: block;
+  margin-top: 0.3em;
+  text-align: right;
+  font-family: var(--font-script);
+  font-size: 0.68em;
+  line-height: 1.6;
+}
+
+.slip {
+  display: grid;
+  gap: 0.75em;
+  margin-top: 0.9em;
+}
+
+.slip .ask {
+  font-size: 1.35em;
+  font-weight: 600;
+}
+
+.slip label span {
+  display: block;
+  font-family: var(--font-scrawl);
+  font-size: 1.2em;
+  line-height: 1;
+  color: var(--ink-soft);
+}
+
+.slip input,
+.slip textarea {
+  display: block;
+  width: 100%;
+  padding: 0.1em 0.1em 0.05em;
+  background: none;
+  border: none;
+  border-bottom: 1.5px solid rgba(50, 38, 22, 0.6);
+  border-radius: 0;
+  /* at least 16px, or phones zoom the page in when the box is tapped */
+  font-size: max(1.05em, 16px);
+  line-height: 1.22;
+  resize: none;
+}
+
+.slip .tag {
+  justify-self: start;
+  transform: rotate(-2deg);
+  background: #e2d2ad;
+}
+
+/* what the slip says back: handwriting that fades away by itself */
+.slip-says {
+  min-height: 1.1em;
+  font-family: var(--font-scrawl);
+  font-size: 1.3em;
+  line-height: 1.05;
+  color: var(--ink-blue);
+}
+
+.slip-says span {
+  display: inline-block;
+  animation: says 4.5s ease both;
+}
+
+.slip-says[data-kind="sent"] span {
+  animation-duration: 7s;
+}
+
+@keyframes says {
+  0% {
+    opacity: 0;
+    translate: 0 0.2em;
+  }
+  6%,
+  82% {
+    opacity: 1;
+    translate: 0 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---------- page 6 ---------- */
+
+.p-story {
+  padding-top: 4%;
+}
+
+.p-story p {
+  margin-bottom: 0.85em;
+  font-size: 1.6em;
+  line-height: 1.16;
+}
+
+.p-story p:nth-child(2) {
+  padding-left: 6%;
+}
+
+/* ---------- page 7 ---------- */
+
+.p-secrets {
+  padding-top: 2%;
+}
+
+.p-secrets .hint {
+  margin-bottom: 1.1em;
+  font-size: 1.35em;
+  font-weight: 600;
+  line-height: 1.12;
+}
+
+.p-secrets ol {
+  display: grid;
+  gap: 0.75em;
+  margin-bottom: 1em;
+}
+
+.p-secrets li {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  min-height: 2.3em;
+  line-height: 1.1;
+}
+
+.p-secrets li button {
+  flex: none;
+  border-radius: 50%;
+}
+
+.p-secrets span[data-found="false"] {
+  font-family: var(--font-scrawl);
+  font-size: 1.5em;
+  color: var(--pencil);
+}
+
+/* a daisy in outline; its petals go blue once its secret is out */
+.daisy {
+  flex: none;
+  display: block;
+  width: 2.2em;
+  height: 2.2em;
+}
+
+.daisy ellipse {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.1;
+}
+
+.daisy circle {
+  fill: #dcae3a;
+  stroke: var(--ink);
+  stroke-width: 1.1;
+}
+
+.p-secrets li button:hover .daisy,
+.p-secrets li button:active .daisy {
+  animation: sway 0.7s ease-out;
+}
+
+.daisy[data-found="true"] ellipse {
+  fill: #9fb1f4;
+}
+
+/* ---------- experience notes: name and logo share the top line ---------- */
+
+.job-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6em;
+}
+
+.job-head h3 {
+  min-width: 0;
+}
+
+/* the bracket after a name is plain handwriting, not part of the link */
+.job-tag {
+  font-family: var(--font-main);
+  font-size: 1.05em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Logos sit in the top corner in a box of one size. The whole page is multiplied onto
+ * the paper, so a logo's white or empty background disappears and the paper's grain
+ * and the leaf shade show through its ink. A little soft, so it looks printed. */
+.logo {
+  flex: none;
+  display: block;
+  width: auto;
+  height: 1.9em;
+  max-width: 5em;
+  margin-top: 0.1em;
+  object-fit: contain;
+  opacity: 0.88;
+  border-radius: 0.2em;
+  filter: blur(0.2px);
+}
+
+.logo[data-wide="true"] {
+  height: 0.7em;
+  margin-top: 0.45em;
+}
+
+.when {
+  display: block;
+  margin-bottom: 0.2em;
+  font-family: var(--font-scrawl);
+  font-size: 1.05em;
+  line-height: 1;
+  color: var(--pencil);
+}
+
+.jobs {
+  gap: 0.5em;
+}
+
+.jobs .hanger {
+  height: 1.05em;
+}
+
+.jobs .note {
+  padding: 0.45em 0.7em 0.5em;
+  line-height: 1.13;
+}
+
+.projects h3 a,
+.jobs h3 a {
+  color: inherit;
+}
+
+.song-row:disabled {
+  cursor: default;
+}

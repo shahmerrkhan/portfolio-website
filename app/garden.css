@@ -1,0 +1,362 @@
+/* The intro, the garden canvas, and the bits of UI that float over the garden. */
+
+/* ---------- Intro: clouds, captions, portal ---------- */
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 45; /* under the contact and chat buttons, which stay on every screen */
+  background: #a9c8ea;
+  transition: opacity 1.3s ease;
+}
+
+.intro[data-stage="out"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.intro-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* the whole screen is the button; the tag in the middle says so */
+.gate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.gate .tag {
+  font-size: 1.9rem;
+  padding-top: 0.45rem;
+  padding-bottom: 0.5rem;
+  transform: rotate(-2deg);
+}
+
+/* captions: a strip of paper with the line written on it */
+.caption {
+  position: absolute;
+  left: 50%;
+  bottom: 19%;
+  width: min(33rem, 88vw);
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.caption span {
+  display: inline-block;
+  padding: 0.45rem 1rem 0.55rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: clamp(1.5rem, 4.4vw, 2.05rem);
+  font-weight: 600;
+  line-height: 1.15;
+  transform: rotate(-1deg);
+  box-shadow:
+    inset 0 -2px 0 var(--paper-shade),
+    0 6px 14px rgba(30, 50, 80, 0.25);
+  animation: caption-in 0.45s ease both;
+}
+
+@keyframes caption-in {
+  from {
+    opacity: 0;
+    transform: rotate(-1deg) translateY(8px);
+  }
+}
+
+/* ---------- Garden: fixed top view, with a tall track to scroll through ---------- */
+
+.garden-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.9s ease;
+}
+
+.garden-canvas[data-ready="true"] {
+  opacity: 1;
+}
+
+/* its height is set by the script: one stretch to open the cover, then one per page and per turn */
+.garden-track {
+  height: 0;
+}
+
+/* measures one screen in a unit that does not change when a phone's address bar hides */
+.screen-probe {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100svh;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.garden-hint {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--edge-bottom) + 0.4rem);
+  z-index: 40;
+  transform: translateX(-50%) rotate(-1.5deg);
+  pointer-events: none;
+}
+
+/* ---------- Page tabs (top) ---------- */
+
+.tabs {
+  position: fixed;
+  top: 0;
+  right: var(--edge);
+  z-index: 40;
+  display: flex;
+  gap: 0.28rem;
+}
+
+.tabs button {
+  min-width: 1.9rem;
+  padding: 0.5rem 0.5rem 0.3rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-main);
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1;
+  border-radius: 0 0 0.3rem 0.3rem;
+  box-shadow: inset 0 -2px 0 var(--paper-shade);
+  transform: translateY(-0.25rem);
+}
+
+.tabs button:nth-child(odd) {
+  background: #e7d9ba;
+}
+
+.tabs button:hover,
+.tabs button:focus-visible {
+  transform: translateY(-0.05rem);
+}
+
+/* the open page's tab hangs lower and takes the leather colour */
+.tabs button[aria-current="page"] {
+  background: var(--leather);
+  color: var(--stitch);
+  box-shadow: inset 0 -2px 0 var(--leather-dark);
+  transform: translateY(0);
+}
+
+.tab-word {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .tabs {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    gap: 0.4rem;
+  }
+  .tabs button {
+    padding-left: 0.7rem;
+    padding-right: 0.7rem;
+  }
+  .tab-number {
+    display: none;
+  }
+  .tab-word {
+    display: inline;
+  }
+}
+
+/* ---------- The secret flowers ---------- */
+
+/* each is a point on the screen, moved by the script to sit on its daisy */
+.secret {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 12;
+  width: 0;
+  height: 0;
+}
+
+.secret button {
+  position: absolute;
+  left: calc(var(--r) * -1);
+  top: calc(var(--r) * -1);
+  width: calc(var(--r) * 2);
+  height: calc(var(--r) * 2);
+  border-radius: 50%;
+}
+
+.secret button:hover,
+.secret button:focus-visible,
+.secret button[aria-expanded="true"] {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.75),
+    0 0 18px 6px rgba(174, 188, 255, 0.5);
+}
+
+.secret-note {
+  position: absolute;
+  width: max-content;
+  max-width: min(15rem, 58vw);
+  padding: 0.5rem 0.8rem 0.6rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 1.35rem;
+  line-height: 1.1;
+  transform: rotate(-2deg);
+  box-shadow:
+    inset 0 -2px 0 var(--paper-shade),
+    0 5px 12px rgba(10, 20, 5, 0.45);
+}
+
+.secret[data-h="right"] .secret-note {
+  left: calc(var(--r) + 8px);
+}
+.secret[data-h="left"] .secret-note {
+  right: calc(var(--r) + 8px);
+}
+.secret[data-v="below"] .secret-note {
+  top: 0;
+}
+.secret[data-v="above"] .secret-note {
+  bottom: 0;
+}
+
+/* ---------- Flat fallback: a photograph instead of the 3D garden ---------- */
+
+.flat-photo {
+  position: fixed;
+  left: 0;
+  top: 0;
+  max-width: none;
+  transform-origin: 0 0;
+}
+
+.flat-turn {
+  position: fixed;
+  left: 50%;
+  bottom: var(--edge-bottom);
+  z-index: 40;
+  display: flex;
+  gap: 0.7rem;
+  transform: translateX(-50%);
+}
+
+.flat-turn .tag:first-child {
+  transform: rotate(-2deg);
+}
+.flat-turn .tag:last-child {
+  transform: rotate(1.5deg);
+}
+
+/* the capture script wants the garden and nothing else */
+.garden[data-still="true"] .notebook,
+.garden[data-still="true"] .tabs,
+.garden[data-still="true"] .garden-hint,
+.garden[data-still="true"] .secrets-layer {
+  display: none;
+}
+
+/* ---------- /admin ---------- */
+
+.admin {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 4.5rem 1.2rem 8rem;
+}
+
+.admin h1 {
+  font-family: var(--font-script);
+  font-size: 1.7rem;
+  font-weight: 400;
+  margin-bottom: 1.4rem;
+}
+
+.admin h2 {
+  font-family: var(--font-scrawl);
+  font-size: 1.9rem;
+  font-weight: 400;
+  color: var(--stitch);
+  margin: 1.8rem 0 0.6rem;
+}
+
+.admin label span {
+  display: block;
+  font-family: var(--font-scrawl);
+  font-size: 1.5rem;
+}
+
+.admin input {
+  width: min(18rem, 100%);
+  margin: 0.2rem 0 1rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: none;
+  box-shadow: inset 0 -2px 0 var(--paper-shade);
+}
+
+.admin form .tag {
+  display: block;
+}
+
+.admin ul {
+  list-style: none;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.admin li {
+  padding: 0.7rem 0.9rem 0.8rem;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: inset 0 -2px 0 var(--paper-shade);
+}
+
+.admin li:nth-child(odd) {
+  transform: rotate(-0.4deg);
+}
+
+.admin li p {
+  font-size: 1.45rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.admin li span {
+  display: block;
+  margin: 0.2rem 0 0.6rem;
+  font-family: var(--font-scrawl);
+  font-size: 1.3rem;
+  color: var(--ink-soft);
+}
+
+.admin li div {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.admin li .tag {
+  background: #e3d3ad;
+}
+
+/* on a narrow screen the turn buttons sit above the corner buttons, not between them */
+@media (max-width: 699px) {
+  .flat-turn {
+    bottom: calc(var(--edge-bottom) + 3.3rem);
+  }
+}

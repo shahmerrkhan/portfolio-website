@@ -1,49 +1,250 @@
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* Palette taken from the approved direction: chestnut leather, paper, brass, garden */
+  --leather: #6e4426;
+  --leather-dark: #3f2514;
+  --leather-light: #94633c;
+  --stitch: #e6d5b0;
+  --paper: #f0e4c9;
+  --paper-shade: #d9c8a3;
+  --ink: #2a1e14;
+  --ink-soft: #5b4630;
+  --brass: #b28e4a;
+  --brass-dark: #7a5d27;
+  --garden: #1f2a19;
+  --garden-light: #3c5230;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+  --font-main: var(--font-caveat), cursive;
+  --font-scrawl: var(--font-reenie), var(--font-caveat), cursive;
+  --font-script: var(--font-apple), var(--font-caveat), cursive;
 
-html {
-  height: 100%;
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --edge: max(14px, env(safe-area-inset-left));
+  --edge-bottom: max(14px, env(safe-area-inset-bottom));
 }
 
 * {
   box-sizing: border-box;
-  padding: 0;
   margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--garden);
+  color: var(--paper);
+  font-family: var(--font-main);
+  font-size: 1.25rem;
+  line-height: 1.3;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
 }
 
 a {
   color: inherit;
-  text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+:focus-visible {
+  outline: 2px dashed var(--brass);
+  outline-offset: 3px;
+}
+
+/* ---------- Paper tag: the base for every small piece of UI ---------- */
+
+.tag {
+  position: relative;
+  display: inline-block;
+  padding: 0.3rem 0.95rem 0.35rem 1.5rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-main);
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.1;
+  text-decoration: none;
+  /* a luggage-tag shape with a clipped corner end, cut by hand */
+  clip-path: polygon(0.7rem 0, 100% 0, 100% 100%, 0.7rem 100%, 0 50%);
+  box-shadow: inset 0 -2px 0 var(--paper-shade);
+}
+
+/* the punched hole */
+.tag::before {
+  content: "";
+  position: absolute;
+  left: 0.72rem;
+  top: 50%;
+  width: 0.36rem;
+  height: 0.36rem;
+  margin-top: -0.18rem;
+  border-radius: 50%;
+  background: var(--garden);
+  box-shadow: 0 0 0 1.5px var(--brass);
+}
+
+.tag:hover,
+.tag:focus-visible {
+  transform: rotate(0deg) translateY(-2px);
+}
+
+/* Everything you can press gives a little and springs back. scale and translate are
+ * separate from transform, so each tag keeps its own tilt. */
+.tag,
+.tabs button,
+.chat-button,
+.shelf li,
+.secret button {
+  transition:
+    transform 0.18s ease,
+    scale 0.22s cubic-bezier(0.3, 1.8, 0.5, 1),
+    translate 0.22s cubic-bezier(0.3, 1.8, 0.5, 1),
+    box-shadow 0.2s ease;
+}
+
+.tag:active,
+.tabs button:active,
+.chat-button:active {
+  scale: 0.93;
+  translate: 0 2px;
+}
+
+.secret button:active {
+  scale: 0.86;
+}
+
+/* ---------- Contact (bottom right) ---------- */
+
+.contact {
+  position: fixed;
+  right: var(--edge);
+  bottom: var(--edge-bottom);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.contact .tag {
+  transform: rotate(-3deg);
+}
+
+.contact-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.45rem;
+}
+
+.contact-list li:nth-child(1) .tag {
+  transform: rotate(2deg);
+}
+.contact-list li:nth-child(2) .tag {
+  transform: rotate(-1.5deg);
+}
+.contact-list li:nth-child(3) .tag {
+  transform: rotate(2.5deg);
+}
+
+.contact-list .tag {
+  font-family: var(--font-scrawl);
+  font-size: 1.5rem;
+  font-weight: 400;
+}
+
+/* ---------- Chat bubble placeholder (bottom left) ---------- */
+
+.chat {
+  position: fixed;
+  left: var(--edge);
+  bottom: var(--edge-bottom);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+/* a round brass button, like the book's clasp */
+.chat-button {
+  width: 2.9rem;
+  height: 2.9rem;
+  border-radius: 50%;
+  background: var(--brass);
+  border: 2px solid var(--brass-dark);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 240, 200, 0.45),
+    inset 0 -3px 0 rgba(60, 40, 10, 0.35);
+  color: var(--leather-dark);
+  font-family: var(--font-scrawl);
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.chat-note {
+  max-width: 13rem;
+  padding: 0.55rem 0.8rem 0.65rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-scrawl);
+  font-size: 1.45rem;
+  line-height: 1.05;
+  transform: rotate(-2deg);
+  box-shadow: inset 0 -2px 0 var(--paper-shade);
+}
+
+/* ---------- Skip intro (top right, always there while the intro runs) ---------- */
+
+.skip {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  right: var(--edge);
+  z-index: 60;
+  transform: rotate(2deg);
+}
+
+/* ---------- Sound on/off (top left) ---------- */
+
+.mute {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  left: var(--edge);
+  z-index: 60;
+  transform: rotate(-2deg);
+}
+
+.tag:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
   }
 }

@@ -1,0 +1,151 @@
+/* The approval page for build step 2. Same paper-and-leather pieces as the site. */
+
+.lab {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 2rem var(--edge) 7rem;
+}
+
+.lab h1 {
+  font-family: var(--font-script);
+  font-size: clamp(1.5rem, 5vw, 2.2rem);
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.lab header p {
+  max-width: 38rem;
+  margin-top: 0.4rem;
+  color: var(--stitch);
+}
+
+.lab section {
+  margin-top: 3rem;
+}
+
+.lab h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+}
+
+.lab h3 {
+  font-family: var(--font-scrawl);
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: var(--stitch);
+}
+
+/* full width of the window, like the real page will be */
+.viewer {
+  height: 92svh;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+}
+
+.clouds {
+  height: min(62svh, 34rem);
+}
+
+.viewer,
+.clouds {
+  position: relative;
+  background: #000;
+  outline: 3px solid var(--leather-dark);
+  outline-offset: 3px;
+}
+
+.clouds {
+  margin-top: 1rem;
+}
+
+/* the status line Clouds prints under its canvas */
+.clouds p {
+  position: absolute;
+  left: 0.6rem;
+  bottom: 0.5rem;
+  padding: 0.1rem 0.5rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-scrawl);
+  font-size: 1.3rem;
+  transform: rotate(-1deg);
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: pan-y;
+}
+
+.hint {
+  position: absolute;
+  left: 0.6rem;
+  top: 0.6rem;
+  padding: 0.1rem 0.5rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-scrawl);
+  font-size: 1.3rem;
+  transform: rotate(1.5deg);
+  pointer-events: none;
+}
+
+.row {
+  margin-top: 1.1rem;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.7rem;
+  margin-top: 0.35rem;
+}
+
+/* an unpicked tag sits back; the picked one is pinned up in brass */
+.pick {
+  opacity: 0.62;
+}
+
+.pick[aria-pressed="true"] {
+  opacity: 1;
+  background: #fff6dc;
+  box-shadow:
+    inset 0 -2px 0 var(--paper-shade),
+    inset 0 0 0 2px var(--brass);
+  transform: rotate(-1.5deg);
+}
+
+.note {
+  margin-top: 0.3rem;
+  font-family: var(--font-scrawl);
+  font-size: 1.35rem;
+  opacity: 0.85;
+}
+
+.small {
+  max-width: 40rem;
+  margin-top: 1.2rem;
+  font-size: 1.1rem;
+  opacity: 0.75;
+}
+
+.sounds {
+  list-style: none;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.sounds li {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.sounds small {
+  font-family: var(--font-scrawl);
+  font-size: 1.2rem;
+  opacity: 0.75;
+  margin-left: 0.3rem;
+}
