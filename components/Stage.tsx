@@ -17,12 +17,14 @@ type Phase = "intro" | "leaving" | "garden";
 
 const calmQuery = "(prefers-reduced-motion: reduce)";
 let picked: Mode | null = null;
+let slow = false; // a device on the low tier: it gets the storm without the lightning
 function mode(): Mode {
   if (picked) return picked;
   // ?still is for scripts/capture-still.mjs, which photographs the empty open book
   if (new URLSearchParams(window.location.search).has("still")) return (picked = "still");
   const calm = window.matchMedia(calmQuery).matches;
-  return (picked = pickQuality().tier === "low" || calm ? "flat" : "3d");
+  slow = pickQuality().tier === "low";
+  return (picked = slow || calm ? "flat" : "3d");
 }
 const never = () => () => {};
 
@@ -48,7 +50,7 @@ export default function Stage() {
     <main data-phase={phase}>
       {which === "3d" && <GardenScene shown={shown} onFail={onFail} />}
       {which === "flat" && <FlatGarden shown={shown} calm={calm} />}
-      {phase !== "garden" && <Intro still={calm} onDone={onDone} />}
+      {phase !== "garden" && <Intro still={calm} flashes={!calm && !slow} onDone={onDone} />}
       <MuteButton />
       <SongDebug />
     </main>

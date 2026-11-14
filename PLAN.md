@@ -26,7 +26,7 @@ All text under "Content" is the owner's own wording. Do not add facts that are n
 | Hosting | Vercel |
 | 3D | Three.js, GSAP ScrollTrigger, Lenis. Photoreal, not drawn SVG |
 | Materials | Poly Haven CC0 PBR textures (leather, grass) + HDRI lighting; paper from ambientCG (CC0) |
-| Clouds / portal / tunnel | Pre-rendered frame sequence on canvas (locked 2026-11-13). Frames come from `scripts/render-cloud-frames.mjs` |
+| Clouds / portal / tunnel | Pre-rendered frame sequence on canvas (locked 2026-11-13). Frames come from `scripts/storm/render.mjs` (storm rebuild, 2026-11-14) |
 | Page text | Real HTML laid over the 3D pages (sharp, selectable, accessible) |
 | GitHub graph | Own route + GitHub GraphQL API, token in env, cached hourly, squares drawn by hand. Username `shahmerrkhan` |
 | Songs | Apple/iTunes official 30s previews, custom player. Fallback: Deezer 30s MP3 through our own route, for browsers without AAC (Opera on Linux) |
@@ -245,8 +245,8 @@ reading and poetry, and I like meeting new people and hearing their stories. (Wo
     characters, a hidden box that catches scripts.
 - [x] 6. Intro, audio, fallbacks, and the done-when checks.
   - Intro (`components/intro`): tap to begin, cloud loop with captions, portal and tunnel clip, fade to the
-    garden. Frames: `public/frames/{clouds,portal}` and `-tall` sets for upright screens. The portal clip comes
-    from `scripts/portal.frag` through the same render script.
+    garden. Frames: `public/frames/{clouds,portal}` and `-tall` sets for upright screens, each with layers of
+    lightning light beside it. All of it comes from `scripts/storm/` and is timed by `components/intro/storm.json`.
   - Without `public/audio/voiceover.mp3` the captions run on a 15 second timer. With it they follow the file.
   - `lib/sound.ts`: mute (remembered), garden loop, and the loop dropping back under the voiceover and songs.
   - Flat fallback (`FlatGarden.tsx`) for low tier, reduced motion and no WebGL: a photograph from

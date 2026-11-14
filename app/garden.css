@@ -6,8 +6,24 @@
   position: fixed;
   inset: 0;
   z-index: 45; /* under the contact and chat buttons, which stay on every screen */
-  background: #a9c8ea;
+  /* the colours of the first cloud frame, so nothing flashes before it arrives */
+  background: linear-gradient(#2b2a38 0%, #3d4152 38%, #59647c 52%, #3a4257 66%, #262b3a 100%);
   transition: opacity 1.3s ease;
+}
+
+/* a gentle darkening toward the corners, like a lens */
+.intro::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 52%, rgb(8 10 18 / 0.42) 100%);
+  transition: opacity 0.8s ease;
+}
+
+/* it lifts as we come out into the daylight */
+.intro[data-stage="out"]::after {
+  opacity: 0;
 }
 
 .intro[data-stage="out"] {
@@ -26,6 +42,7 @@
 /* the whole screen is the button; the tag in the middle says so */
 .gate {
   position: absolute;
+  z-index: 1;
   inset: 0;
   width: 100%;
   display: grid;
@@ -42,6 +59,7 @@
 /* captions: a strip of paper with the line written on it */
 .caption {
   position: absolute;
+  z-index: 1;
   left: 50%;
   bottom: 19%;
   width: min(33rem, 88vw);

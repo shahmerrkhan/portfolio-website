@@ -1,4 +1,4 @@
-// The mute switch, the garden loop and the portal swoosh.
+// The mute switch, the garden loop, the portal swoosh, and the storm (wind and thunder).
 // Browser only. Nothing here makes a noise until a tap has happened.
 // The songs are not in here: they are plain <audio> elements (see lib/player.ts) and
 // nothing in this file touches their sound.
@@ -14,6 +14,8 @@ let ctx: AudioContext | null = null;
 let gain: GainNode | null = null;
 let started = false;
 let whoosh: GainNode | null = null; // the swoosh that is sounding now, if one is
+let storm: GainNode | null = null; // everything the storm makes goes through this one node
+let stormSources: AudioScheduledSourceNode[] = [];
 const listeners = new Set<() => void>();
 
 function load() {
@@ -84,6 +86,99 @@ function makeSwoosh(c: AudioContext, at: number) {
   return out;
 }
 
+// The storm is made here too, not downloaded. Wind: soft noise through a band filter
+// whose pitch and level wander slowly. Thunder: low noise shaped into a few overlapping
+// rolls with a long tail, through a filter that closes as it dies away, so it is all
+// rumble and no hiss. The big clap adds a soft thump underneath. All of it is kept well
+// under the voiceover (see STORM below) and none of it is ever sharp.
+const STORM = { wind: 0.045, thunder: 1 };
+
+function softNoise(c: AudioContext, seconds: number, shape?: (t: number) => number) {
+  const buffer = c.createBuffer(1, Math.ceil(c.sampleRate * seconds), c.sampleRate);
+  const data = buffer.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < data.length; i++) {
+    // each sample is mostly the one before: this is what makes it a rumble
+    last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02;
+    data[i] = last * 3.5 * (shape ? shape(i / c.sampleRate) : 1);
+  }
+  return buffer;
+}
+
+function makeWind(c: AudioContext, out: AudioNode) {
+  const source = c.createBufferSource();
+  source.buffer = softNoise(c, 6);
+  source.loop = true;
+  const band = c.createBiquadFilter();
+  band.type = "bandpass";
+  band.frequency.value = 320;
+  band.Q.value = 0.5;
+  const level = c.createGain();
+  level.gain.setValueAtTime(0, c.currentTime);
+  level.gain.linearRampToValueAtTime(STORM.wind, c.currentTime + 2.5);
+  // two slow wobbles that never line up, one on the pitch and one on the level
+  const sway = c.createOscillator();
+  sway.frequency.value = 0.13;
+  const swayBy = c.createGain();
+  swayBy.gain.value = 110;
+  sway.connect(swayBy).connect(band.frequency);
+  const gust = c.createOscillator();
+  gust.frequency.value = 0.21;
+  const gustBy = c.createGain();
+  gustBy.gain.value = STORM.wind * 0.45;
+  gust.connect(gustBy).connect(level.gain);
+  source.connect(band).connect(level).connect(out);
+  for (const node of [source, sway, gust]) node.start();
+  return [source, sway, gust];
+}
+
+// `size` 0..1: how near and how big. A far one is a short low murmur; the near one rolls on.
+function makeThunder(c: AudioContext, out: AudioNode, level: number, size: number) {
+  const at = c.currentTime + 0.02;
+  const seconds = 2.6 + size * 3.6;
+  const rolls = Array.from({ length: 3 + Math.round(size * 4) }, (_, i) => ({
+    at: i === 0 ? 0 : Math.random() * seconds * 0.4,
+    rise: 0.05 + Math.random() * 0.15 + (1 - size) * 0.25,
+    fall: 0.5 + Math.random() * 0.9 + size * 0.5,
+    amount: i === 0 ? 1 : 0.35 + Math.random() * 0.45,
+  }));
+  const shape = (t: number) => {
+    let v = 0;
+    for (const r of rolls) {
+      const x = t - r.at;
+      if (x > 0) v += r.amount * Math.min(1, x / r.rise) * Math.exp(-Math.max(0, x - r.rise) / r.fall);
+    }
+    return v * Math.min(1, (seconds - t) / 0.6); // no click at the very end
+  };
+  const source = c.createBufferSource();
+  source.buffer = softNoise(c, seconds, shape);
+  const low = c.createBiquadFilter();
+  low.type = "lowpass";
+  low.Q.value = 0.4;
+  low.frequency.setValueAtTime(150 + size * 420, at);
+  low.frequency.exponentialRampToValueAtTime(70, at + seconds);
+  const gain = c.createGain();
+  gain.gain.value = level * STORM.thunder;
+  source.connect(low).connect(gain).connect(out);
+  source.start(at);
+  const made: AudioScheduledSourceNode[] = [source];
+  if (size >= 1) {
+    // the clap itself: a low thump that sinks, felt more than heard
+    const thump = c.createOscillator();
+    thump.frequency.setValueAtTime(64, at);
+    thump.frequency.exponentialRampToValueAtTime(36, at + 0.9);
+    const body = c.createGain();
+    body.gain.setValueAtTime(0.0001, at);
+    body.gain.exponentialRampToValueAtTime(level * 0.8, at + 0.04);
+    body.gain.exponentialRampToValueAtTime(0.0001, at + 1.5);
+    thump.connect(body).connect(out);
+    thump.start(at);
+    thump.stop(at + 1.6);
+    made.push(thump);
+  }
+  return made;
+}
+
 function settle(seconds = 0.8) {
   if (!ctx) return;
   if (muted) hush(seconds);
@@ -91,6 +186,7 @@ function settle(seconds = 0.8) {
     gain.gain.cancelScheduledValues(ctx.currentTime);
     gain.gain.setTargetAtTime(level(), ctx.currentTime, seconds / 3);
   }
+  if (storm) storm.gain.setTargetAtTime(muted ? 0 : 1, ctx.currentTime, seconds / 3);
   // no reason to keep the audio hardware awake while everything is muted
   if (muted) window.setTimeout(() => muted && ctx?.suspend(), seconds * 1000 + 200);
   else void ctx.resume();
@@ -132,6 +228,42 @@ export const sound = {
   },
   stopSwoosh() {
     hush(0.25);
+  },
+  // The storm under the intro: starts the wind. Call it from the tap that begins the
+  // intro. It follows the mute button like everything else.
+  startStorm() {
+    load();
+    const c = context();
+    if (!c || storm) return;
+    storm = c.createGain();
+    storm.gain.value = muted ? 0 : 1;
+    storm.connect(c.destination);
+    stormSources = makeWind(c, storm);
+  },
+  // One roll of thunder, now. Does nothing unless the storm is running.
+  thunder(level: number, size: number) {
+    if (!ctx || !storm || ctx.state !== "running") return;
+    const made = makeThunder(ctx, storm, level, size);
+    stormSources.push(...made);
+    made[0].onended = () => (stormSources = stormSources.filter((n) => !made.includes(n)));
+  },
+  // Fade the wind and any thunder away and stop them. Safe to call twice.
+  stopStorm(seconds = 0.3) {
+    if (!ctx || !storm) return;
+    const out = storm;
+    const sources = stormSources;
+    storm = null;
+    stormSources = [];
+    out.gain.cancelScheduledValues(ctx.currentTime);
+    out.gain.setTargetAtTime(0, ctx.currentTime, seconds / 4);
+    window.setTimeout(() => {
+      for (const node of sources) {
+        try {
+          node.stop();
+        } catch {}
+      }
+      out.disconnect();
+    }, seconds * 1000 + 150);
   },
   // The garden loop. Call it from a tap, or after one. Safe to call twice.
   async startGarden() {

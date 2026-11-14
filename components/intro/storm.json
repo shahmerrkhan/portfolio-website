@@ -1,0 +1,27 @@
+{
+  "note": "The storm's timeline. Read by the site (Intro.tsx, lib/sound.ts) and by scripts/storm/render.mjs, so the light that was rendered and the moment it is shown can never drift apart. Times are seconds on the voiceover's clock. env is brightness over the life of a flash: [seconds after `at`, 0..1].",
+  "fps": 13,
+  "loop": 144,
+  "flashes": [
+    { "name": "far-1", "at": 2.1, "len": 0.8, "half": true, "env": [[0, 0], [0.06, 0.55], [0.2, 0.18], [0.36, 0.8], [0.8, 0]] },
+    { "name": "far-2", "at": 4.35, "len": 0.7, "half": true, "env": [[0, 0], [0.07, 0.7], [0.24, 0.25], [0.7, 0]] },
+    { "name": "far-3", "at": 5.95, "len": 0.6, "half": true, "env": [[0, 0], [0.06, 0.6], [0.6, 0]] },
+    { "name": "sheet-1", "at": 7.85, "len": 1.0, "half": true, "env": [[0, 0], [0.07, 0.8], [0.24, 0.3], [0.42, 0.95], [1.0, 0]] },
+    { "name": "sheet-2", "at": 9.3, "len": 1.0, "half": true, "env": [[0, 0], [0.06, 0.9], [0.26, 0.35], [0.46, 0.7], [1.0, 0]] },
+    { "name": "sheet-3", "at": 11.4, "len": 1.1, "half": true, "env": [[0, 0], [0.06, 1], [0.24, 0.3], [0.44, 0.85], [1.1, 0]] },
+    { "name": "pre", "at": 13.15, "len": 0.5, "half": true, "env": [[0, 0], [0.06, 0.7], [0.5, 0]] },
+    { "name": "strike", "at": 13.95, "len": 2.2, "half": false, "env": [[0, 0], [0.05, 1], [0.22, 0.3], [0.4, 0.8], [0.75, 0.3], [2.2, 0]] }
+  ],
+  "eye": { "name": "eye", "at": 14.5, "len": 4.4, "env": [[0, 0], [1.2, 0.3], [3.8, 1], [4.4, 1]] },
+  "tunnel": [
+    { "name": "wall-1", "at": 2.62, "len": 0.5, "env": [[0, 0], [0.05, 0.9], [0.2, 0.3], [0.5, 0]] },
+    { "name": "wall-2", "at": 3.45, "len": 0.45, "env": [[0, 0], [0.05, 0.75], [0.45, 0]] }
+  ],
+  "thunder": [
+    { "at": 3.0, "level": 0.1, "size": 0.25 },
+    { "at": 6.6, "level": 0.11, "size": 0.3 },
+    { "at": 9.2, "level": 0.14, "size": 0.45 },
+    { "at": 12.5, "level": 0.15, "size": 0.5 },
+    { "at": 14.85, "level": 0.3, "size": 1 }
+  ]
+}

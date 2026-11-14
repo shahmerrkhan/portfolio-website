@@ -23,7 +23,13 @@ My personal portfolio: a worn leather notebook lying open in a garden, built to 
 
 ## What it is
 
-You start above the clouds. Tap once, a short voiceover plays with captions, and the clouds open into a portal that pulls you down through a cloud tunnel. You land in a garden with a leather notebook lying in the grass. Scroll and the cover opens, then the pages turn one by one.
+You start inside a storm. Tap once and you're flying between two decks of dark cloud while a short voiceover plays with captions. Lightning flickers deep inside the clouds, gets closer as the voice builds, and then one big bolt comes down right in front of you. After that it goes quiet, a blue opening appears in the cloud wall like the calm eye of the storm, and it pulls you through a tunnel of cloud into daylight. You land in a sunny garden with a leather notebook lying in the grass. Scroll and the cover opens, then the pages turn one by one.
+
+<p align="center">
+  <img src="docs/intro/after-lightning.webp" alt="The intro: a lightning bolt between two decks of storm cloud" width="380">
+  &nbsp;
+  <img src="docs/intro/after-portal.webp" alt="The intro: the blue portal, an eye in a swirling wall of cloud" width="380">
+</p>
 
 There are seven pages:
 
@@ -35,9 +41,11 @@ There are seven pages:
 6. **Guestbook**, leave me a note
 7. **Secrets**, for whatever you found in the garden
 
-Birds play quietly in the background once you've tapped in, and there's a tag in the corner to mute them. The skip intro button is there from the very first screen if you just want the book.
+The storm has wind and thunder under the voice, and the garden has birds. Nothing makes a sound until you've tapped in, and there's a tag in the corner to mute all of it. The skip intro button is there from the very first screen if you just want the book.
 
 It was built for phones first. On a phone the book shows one page at a time and the camera slides across the spread. Devices that can't run the 3D scene smoothly, and anyone with reduced motion turned on, get a flat version instead: a still photo of the same garden and book with a simple page turn.
+
+The lightning is kept gentle on purpose. It never flashes more than three times in a second, it never turns the whole screen white, and if you have reduced motion turned on (or your device is on the slow tier) you get the same storm with no flashes at all.
 
 ## Things to find
 
@@ -56,7 +64,7 @@ It was built for phones first. On a phone the book shows one page at a time and 
 - [Neon](https://neon.tech) Postgres for the guestbook
 - Three handwriting fonts from Google Fonts: Caveat, Reenie Beanie and Homemade Apple
 
-The clouds and the portal are pre-rendered frames (WebP) played on a canvas, so they look the same on a cheap phone as on a desktop.
+The storm and the portal are pre-rendered frames (WebP) played on a canvas, so they look the same on a cheap phone as on a desktop. They come from a volumetric cloud renderer I run offline in headless Chrome (`scripts/storm/`): a raymarched cloud volume shaped with Perlin-Worley noise and lit with proper scattering, at far more steps and samples than a phone could do live. Each lightning flash is its own layer of frames holding only the light it adds to the clouds, and the site fades those layers in time with the voice. That's why the flashes can be switched off without changing anything else.
 
 ## Run it locally
 
@@ -89,14 +97,14 @@ npm start        # serve the build
 app/            pages, styles and the API routes (github, songs, guestbook)
 app/admin/      the private page for approving guestbook notes
 components/
-  intro/        tap to begin, cloud frames, voiceover and captions
+  intro/        tap to begin, storm frames, lightning timeline, voiceover and captions
   scene/        the Three.js garden, the book and the page-turn rig
   pages/        the seven notebook pages
   ui/           contact tag, mute, chat bubble, page tabs
 content/site.ts every word on the site, in one file
 lib/            scroll plan, sound, songs lookup, database
 public/         frames, textures, audio, logos and the flat fallback image
-scripts/        how the cloud frames and the fallback still were made
+scripts/        how the storm frames and the fallback still were made
 ```
 
 ## Credits
@@ -104,6 +112,7 @@ scripts/        how the cloud frames and the fallback still were made
 - Leather, ground and the `meadow_2` HDRI sky from [Poly Haven](https://polyhaven.com) (CC0)
 - Paper, grass, daisy and leaf cut-outs from [ambientCG](https://ambientcg.com) (CC0)
 - The garden sound is "Birds singing in garden" by ezwa on [Wikimedia Commons](https://commons.wikimedia.org), released into the public domain
+- The thunder, the wind and the portal swoosh are not recordings. They're made in the browser with the Web Audio API (`lib/sound.ts`)
 - The voiceover was made with [ElevenLabs](https://elevenlabs.io)
 - Song previews come from the iTunes Search API, with [Deezer](https://www.deezer.com) as the fallback
 - Company logos belong to their owners and were taken from their own sites
