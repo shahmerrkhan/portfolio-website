@@ -7,6 +7,10 @@
 // of screen regions. A flash is counted the WCAG way: a rise of 10% or more of full
 // brightness followed by a fall of 10% or more. It reports the worst region.
 //
+// It also refuses a white strobe: while any lightning layer is showing, no more than a
+// quarter of the screen may be near pure white (relative luminance 0.8 or more). The slow
+// fade to daylight at the end of the tunnel is not lightning and is not counted.
+//
 //   node scripts/storm/check-flashes.mjs [wide|tall]
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -39,6 +43,7 @@ const linear = (v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
 // luminance of each of the 16 regions, for a base frame with layers [{pixels, alpha}] over it
 function regions(base, layers) {
   const out = new Float32Array(16);
+  out.lit = layers.some((l) => l.alpha > 0.004);
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
       const rgb = [0, 1, 2].map((c) => {
@@ -75,10 +80,13 @@ function run(label, seconds, at) {
     for (const t of flashes) count = Math.max(count, flashes.filter((u) => u >= t && u < t + 1).length);
     if (count > worst.count || (count === worst.count && swing > worst.swing)) worst = { count, region: r, peak, swing, total: flashes.length };
   }
+  const white = Math.max(...series.map((s) => (s.lit ? s.filter((v) => v >= 0.8).length / 16 : 0)));
+  worst.white = white;
   const mean = series.map((s) => s.reduce((a, b) => a + b) / 16);
   console.log(`${label}: at most ${worst.count} flash(es) in any one second (worst region ${worst.region}, ${worst.total ?? 0} over the whole clip), ` +
-    `largest swing ${(worst.swing * 100).toFixed(0)}% of full brightness, brightest region ${(worst.peak * 100).toFixed(0)}%, brightest whole-screen average ${(Math.max(...mean) * 100).toFixed(0)}%`);
-  return worst.count;
+    `largest swing ${(worst.swing * 100).toFixed(0)}% of full brightness, brightest region ${(worst.peak * 100).toFixed(0)}%, brightest whole-screen average ${(Math.max(...mean) * 100).toFixed(0)}%, ` +
+    `most of the screen near white during lightning ${(white * 100).toFixed(0)}%`);
+  return worst;
 }
 
 const cloudDir = `clouds${suffix}`, portalDir = `portal${suffix}`;
@@ -103,8 +111,12 @@ const b = run(`portal${suffix}`, 4.95, (t) => {
   }
   return regions(frame(name(portalDir, f)), layers);
 });
-if (Math.max(a, b) > 3) {
+if (Math.max(a.count, b.count) > 3) {
   console.error("too many flashes in one second");
   process.exit(1);
 }
-console.log("within the three-flashes-a-second limit");
+if (Math.max(a.white, b.white) > 0.25) {
+  console.error("lightning turns more than a quarter of the screen white");
+  process.exit(1);
+}
+console.log("within the three-flashes-a-second limit, and no white strobe");

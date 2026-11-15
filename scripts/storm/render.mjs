@@ -15,7 +15,7 @@
 // If STORM_MASTERS is set, the full-quality PNG of every frame is kept there.
 import http from "node:http";
 import { spawn, execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, mkdtempSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, mkdtempSync, renameSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { plan, root } from "./scene.mjs";
@@ -37,7 +37,11 @@ const master = (job) => path.join(masters, job.file + ".png");
 const encode = (png, job) => {
   const out = target(job);
   mkdirSync(path.dirname(out), { recursive: true });
-  execFileSync("ffmpeg", ["-v", "error", "-y", "-i", png, "-c:v", "libwebp", "-quality", String(job.quality), "-compression_level", "6", out]);
+  // written beside the target and renamed, so a frame that exists is always a whole frame
+  // and a render that was cut off can pick up from the last finished one
+  const part = out + ".part";
+  execFileSync("ffmpeg", ["-v", "error", "-y", "-i", png, "-c:v", "libwebp", "-quality", String(job.quality), "-compression_level", "6", "-f", "webp", part]);
+  renameSync(part, out);
 };
 
 const { jobs: all, manifests } = plan(setName);
@@ -103,7 +107,8 @@ const server = http.createServer((req, res) => {
       } else {
         const png = masters ? master(job) : path.join(work, "frame.png");
         mkdirSync(path.dirname(png), { recursive: true });
-        writeFileSync(png, body);
+        writeFileSync(png + ".part", body);
+        renameSync(png + ".part", png);
         encode(png, job);
       }
       done++;
@@ -128,4 +133,11 @@ server.listen(0, "127.0.0.1", () => {
       "--disable-background-timer-throttling", "--disable-renderer-backgrounding", `--user-data-dir=${path.join(work, "profile")}`, "--window-size=1280,720", url],
     { stdio: "ignore" },
   );
+  // if Chrome dies or we are stopped, leave cleanly; run again and it carries on
+  chrome.on("exit", () => {
+    console.log(`chrome stopped after ${done}/${jobs.length} frames`);
+    rmSync(work, { recursive: true, force: true });
+    process.exit(done === jobs.length && !failed ? 0 : 1);
+  });
+  for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"]) process.on(sig, () => chrome.kill());
 });

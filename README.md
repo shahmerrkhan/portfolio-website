@@ -66,6 +66,8 @@ The lightning is kept gentle on purpose. It never flashes more than three times 
 
 The storm and the portal are pre-rendered frames (WebP) played on a canvas, so they look the same on a cheap phone as on a desktop. They come from a volumetric cloud renderer I run offline in headless Chrome (`scripts/storm/`): a raymarched cloud volume shaped with Perlin-Worley noise and lit with proper scattering, at far more steps and samples than a phone could do live. Each lightning flash is its own layer of frames holding only the light it adds to the clouds, and the site fades those layers in time with the voice. That's why the flashes can be switched off without changing anything else.
 
+The whole intro is about 12 MB of frames on a desktop (1280x720) and under 4 MB on a phone (608x1080, upright), and it starts playing as soon as the first few have arrived. Two small scripts keep it honest: `scripts/storm/check-flashes.mjs` plays the real frames against the lightning timeline and fails if anything flashes more than three times in a second or turns more than a quarter of the screen white, and `scripts/storm/check-loudness.mjs` listens to the running site and fails if the thunder or wind ever comes within 6 LU of the voice. Before and after stills of the rebuild are in `docs/intro/`.
+
 ## Run it locally
 
 You'll need Node 20 or newer.

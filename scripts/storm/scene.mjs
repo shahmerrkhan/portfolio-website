@@ -179,9 +179,11 @@ function tunnelJobs(set, flash, index) {
   return { jobs, first, count, scale: 0.5 };
 }
 
+// WebP quality per kind of frame, picked by measuring size against likeness to the master
+// (SSIM): the loop barely changes below 90, so the phone set is taken down further.
 export const SETS = {
-  wide: { suffix: "", w: 1280, h: 720, samples: 8, steps: 300, q: { loop: 90, portal: 90, flash: 84 } },
-  tall: { suffix: "-tall", w: 608, h: 1080, samples: 8, steps: 300, q: { loop: 90, portal: 90, flash: 84 } },
+  wide: { suffix: "", w: 1280, h: 720, samples: 8, steps: 300, q: { loop: 90, portal: 90, flash: 90 } },
+  tall: { suffix: "-tall", w: 608, h: 1080, samples: 8, steps: 300, q: { loop: 80, portal: 80, flash: 78 } },
 };
 
 // every frame of one set, and the two manifests that describe them to the site

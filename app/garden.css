@@ -21,7 +21,13 @@
   transition: opacity 0.8s ease;
 }
 
-/* it lifts as we come out into the daylight */
+/* it lifts as we come out into the daylight: late in the tunnel, as the white comes up,
+   so the corners are never grey over white */
+.intro[data-stage="portal"]::after {
+  opacity: 0;
+  transition: opacity 1.1s ease 3.3s;
+}
+
 .intro[data-stage="out"]::after {
   opacity: 0;
 }
