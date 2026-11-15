@@ -5,13 +5,14 @@ import {
   contact,
   experience,
   projects,
+  when,
   words,
   type Experience,
 } from "@/content/site";
 import Linked from "./Linked";
 
-// Page 3: projects on the left, all of the experience on the right.
-// The GitHub graph is on the next left-hand page (see Page4).
+// Page 3: projects on the left, the first three experience notes on the right.
+// The other three are on the next left-hand page, and the GitHub graph after them (see Page4).
 
 const PAPERS = ["legal", "blue", "ruled", "pink"];
 const FIXINGS = ["taped", "pinned", "taped", "pinned"];
@@ -130,20 +131,24 @@ export function GitHubGraph() {
   );
 }
 
-// How many experience notes fit on one phone page at a readable size. On a tall screen
-// the rest carry on at the top of the next page, under the same heading (see Page4).
-// On a wide screen all of them are on the one page.
+// "Sep 2026 - Present". The handwriting font's own hyphen is a speck, so the dash is
+// drawn longer; it is still a plain hyphen to a screen reader or a copy and paste.
+function Dates({ text }: { text: string }) {
+  const [from, to] = text.split(" - ");
+  if (!to) return <>{from}</>;
+  return (
+    <>
+      {from} <span className="dash">-</span> {to}
+    </>
+  );
+}
+
+// How many experience notes go on one page at a readable size. The rest carry on at the
+// top of the next left-hand page, under the same heading (see Page4), on every screen.
+// The list is sorted newest first in content/site.ts, so the split follows the dates.
 export const JOBS_FIRST = 3;
 
-export function Jobs({
-  list,
-  from = 0,
-  split = false,
-}: {
-  list: Experience[];
-  from?: number;
-  split?: boolean;
-}) {
+export function Jobs({ list, from = 0 }: { list: Experience[]; from?: number }) {
   return (
     <ul className="jobs">
       {list.map((e, k) => {
@@ -151,7 +156,7 @@ export function Jobs({
         return (
           <li
             key={e.name}
-            className={`hung${split && i >= JOBS_FIRST ? " wide-only" : ""}`}
+            className="hung"
             style={
               {
                 "--tilt": ["1.2deg", "-1.5deg", "0.9deg"][i % 3],
@@ -175,17 +180,11 @@ export function Jobs({
                   />
                 )}
               </div>
-              {e.role && (
-                <span className="role">
-                  {e.current ? `${words.current}, ` : ""}
-                  {e.role}
-                </span>
-              )}
-              {(e.when || e.where) && (
-                <span className="when">
-                  {[e.when, e.where].filter(Boolean).join(" · ")}
-                </span>
-              )}
+              {e.role && <span className="role">{e.role}</span>}
+              <span className="when">
+                <Dates text={when(e)} />
+                {e.where ? `, ${e.where}` : ""}
+              </span>
               <p>
                 <Linked>{e.line}</Linked>
               </p>
@@ -201,7 +200,7 @@ export function WorkRight() {
   return (
     <div className="p-work">
       <h2 className="heading">{words.experience}</h2>
-      <Jobs list={experience} split />
+      <Jobs list={experience.slice(0, JOBS_FIRST)} />
     </div>
   );
 }

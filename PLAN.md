@@ -12,8 +12,9 @@ All text under "Content" is the owner's own wording. Do not add facts that are n
   Any new visual direction is shown for approval before it is locked.
 - Show every texture, HDRI and sound for approval before using it.
 - Only three fonts: Caveat (main), Reenie Beanie and Homemade Apple (accents).
-- Two past projects the owner named are left off completely. Their names are kept out of this repo on
-  purpose (they are in the session memory notes); never add them, in code, comments or copy.
+- One past project the owner named is left off completely. Its name is kept out of this repo on purpose
+  (it is in the session memory notes); never add it, in code, comments or copy.
+  (Sportiner used to be left off as well. The owner changed that on 2026-11-15: it is now an Experience entry.)
 - Tech and dev framing, never "founder" or "startup". Sip and Unbound are "things I built".
 - Never use the word "outreach" for Next Generation Hacks.
 - After each finished build step, say whether to /clear.
@@ -119,29 +120,41 @@ https://github.com/shahmerrkhan/heyclicky-linux, Commutr https://github.com/kost
 https://github.com/shahmerrkhan/spiral. Spiral's card ends "Built in one week during Prettiflow's FlowHouse,
 Cohort 1."
 
-Experience (hanging notes, newest first; wording from the owner's LinkedIn, 2026-11-14):
+Experience (hanging notes; wording from the owner's LinkedIn, 2026-11-14, dates and Sportiner added 2026-11-15).
 
-- **Magic Hour (YC W24)** (current, AI/ML Prototyping): "Magic Hour" links to https://magichour.ai, the bracket is
-  plain text, everywhere the name appears. Clip-extraction pipeline and scene-based reframing, generation time cut
-  from 30+ min to about 6 min on an L4 GPU. Benchmarked against Opus Clip, and my clipper runs faster.
-- **Faculty of Engineering, McMaster University**: Leader In Training (LIT). Aug 2026, 1 month, Hamilton, Ontario.
-  "Mentored Grade 6-8 students one-on-one at McMaster's summer engineering camp. Ran robotics and Arduino labs."
-- **Prettiflow** (https://www.prettiflow.com): FlowHouse Builder, Cohort 1. May 2026 to Jun 2026, 2 months, remote.
-  "One of 200 builders picked for Cohort 1. Built and shipped Spiral, a goal tracking app, in one week."
-- **Unbound** (https://www.becomeunbound.org), no title, no product details: "Ran an event at Waterloo Tech Week
-  (72 hrs, all spots filled), partnered with YPLS on a 500+ person summit, and currently sponsoring Terminal X26,
-  a hackathon backed by 4 YC companies."
-- **Next Generation Hacks** (https://www.ngnhacks.ca): worldwide online hackathon for high schoolers, built with
-  York University and Y Space. 342 participants across 35+ countries, and $25K CAD in sponsor value from companies
-  like Mozilla and Siemens.
+Order: newest at the top, oldest at the bottom, and it is sorted in code, not by hand (`experience` in
+`content/site.ts`). Roles still going come first, the one that started last on top; then finished roles by
+when they ended, most recent first (a tie goes to the one that started later). Each entry carries `start`
+and `end` as "YYYY-MM"; leave `end` out while the role is going. Dates are written the way LinkedIn writes
+them, "Sep 2026 - Present", never with a duration ("3 mos" goes stale).
+
+1. **Magic Hour (YC W24)**, AI/ML Prototyping. Sep 2026 - Present, Remote. "Magic Hour" links to
+   https://magichour.ai, the bracket is plain text, everywhere the name appears. "Clip-extraction pipeline and
+   scene-based reframing. Cut generation time from 30+ min to about 6 min on an L4 GPU, and benchmarked it
+   against Opus Clip, where it generated clips faster."
+2. **Unbound** (https://www.becomeunbound.org), no title, no product details. Sep 2026 - Present, Remote. "Ran an
+   event at Waterloo Tech Week (72 hrs, all spots filled), partnered with YPLS on a 500+ person summit, and
+   currently sponsoring Terminal X26, a hackathon backed by 4 YC companies."
+3. **Sportiner** (https://apps.apple.com/ca/app/sportiner/id6758223656), Software Engineer. Aug 2026 - Present,
+   no location (none was given). "Worked on a live product with 300+ users, shipping features straight to
+   production alongside the co-founder." No logo: none was supplied.
+4. **McMaster University**, Leader In Training (LIT). Aug 2026, Hamilton, Ontario. "Mentored Grade 6-8 students
+   one-on-one at McMaster's summer engineering camp. Ran robotics and Arduino labs."
+5. **Next Generation Hacks** (https://www.ngnhacks.ca), no title. Apr 2026 - Aug 2026, Remote. "Worldwide online
+   hackathon for high schoolers, built with York University and Y Space. 342 participants across 35+ countries,
+   and $25K CAD in sponsor value from companies like Mozilla and Siemens."
+6. **Prettiflow** (https://www.prettiflow.com), FlowHouse Builder, Cohort 1. May 2026 - Jun 2026, Remote. "One of
+   200 builders picked for Cohort 1. Built and shipped Spiral, a goal tracking app, in one week."
 
 Logos, fetched from each organisation's own site into `public/logos` and never redrawn: Magic Hour (the mark
 from their page header), Unbound (their icon file with the empty margin cut off), Next Generation Hacks (the owl).
 
-Wide screens: all five on the experience page. Tall screens: the first three there, the last two at the top of
-the next page under the same heading, because five on one phone page came out at 11px.
+On every screen: the first three on the experience page, the other three at the top of the next left-hand page
+under the same heading. Six on one page came out at 14px on a desktop and ran off the paper; three and three
+sits at about 20px on a desktop and 14px on a phone.
 
-Then a short live glimpse of the GitHub contributions graph, on the left-hand page facing "what I believe".
+The GitHub contributions graph is on the "what I believe" page, under the three lines (it used to be on the
+left-hand page, which the rest of the experience now needs).
 
 ### Page 3: what I believe
 
@@ -155,15 +168,22 @@ Songs, scattered, about 30 seconds each:
 Drake: Cameras, Sticky. The Weeknd: After Hours, Out of Time. Travis Scott: My Eyes, Flocky Flocky (with
 Don Toliver).
 
-"Some books I've read" shelf with small clickable spines:
+"Some books I've read": one picture of twenty spines on two boards, painted by `scripts/bookshelf/render.mjs`
+from CC0 photographs of book cloth, linen, hessian, leather, paper and wood (Poly Haven and ambientCG), with a
+clear button over each book (`components/pages/shelf.json` says where). The books, in shelf order:
 Meditations, Man's Search for Meaning, The Myth of Sisyphus, The Stranger, Notes from Underground,
 Symposium, The Republic, The Prince, Sophie's World, The Alchemist, The Power of Now, The Picture of
 Dorian Gray, 1984, Animal Farm, No Longer Human, The Pathans (Abdul Ghani Khan), The Communist Manifesto,
 The Kite Runner, A Thousand Splendid Suns, And the Mountains Echoed.
 
-Hobbies: gym, reading and poetry, love for everyone, walks, meeting new people and hearing their stories,
-hanging out with friends, running, soccer, photography, drawing (used to), chess (a little), gaming (used
-to), swimming (a little), really want to learn guitar, deep conversations, down for anything ("hit me up").
+Hobbies, in the owner's words from his own list (2026-11-15), in three groups:
+
+- these days: reading and poetry; love for everyone, and love in general; walks; meeting new people and hearing
+  their stories; hanging out with friends; running; soccer; taking pics of myself (not professional); deep
+  conversations; down for anything ("hit me up").
+- a little, or used to: gym (haven't gone in a while); drawing (used to); chess (a little); big gamer (used to
+  be); swimming (a little).
+- someday: really want to learn guitar; want to try modelling (no idea how to start).
 
 ### Page 5: guestbook
 
@@ -248,7 +268,7 @@ reading and poetry, and I like meeting new people and hearing their stories. (Wo
     garden. Frames: `public/frames/{clouds,portal}` and `-tall` sets for upright screens, each with layers of
     lightning light beside it. All of it comes from `scripts/storm/` and is timed by `components/intro/storm.json`.
   - Without `public/audio/voiceover.mp3` the captions run on a 15 second timer. With it they follow the file.
-  - `lib/sound.ts`: mute (remembered), garden loop, and the loop dropping back under the voiceover and songs.
+  - `lib/sound.ts`: mute (remembered), garden loop, and the loop dropping back under the voiceover.
   - Flat fallback (`FlatGarden.tsx`) for low tier, reduced motion and no WebGL: a photograph from
     `scripts/capture-still.mjs`, the same pages, tabs and back/next buttons, a 2D turn.
 
@@ -271,6 +291,22 @@ reading and poetry, and I like meeting new people and hearing their stories. (Wo
   - Songs: Apple's AAC preview first; if the browser cannot play AAC, or the file fails or stays silent for 7
     seconds, the same song as an MP3 from Deezer through `/api/songs/mp3`. Failures are logged to the console
     and shown on the card.
+
+- [x] 9. Third fix pass (2026-11-15).
+  - Experience: Sportiner added, dates on every card, sorted by date in code, split three and three.
+  - Skip intro: a photograph of the closed book (`public/fallback/closed-*.webp`, from
+    `scripts/capture-poster.mjs`) is on screen at once and the real garden fades in over it; "opening the
+    notebook..." shows until it can be scrolled. Loading itself: photos decoded off the main thread
+    (`lib/assets.ts`), handed to the graphics card one at a time, shaders compiled in the background while the
+    photos download, nothing drawn until the first frame is whole. Every device starts on the 1K photos; the
+    high tier swaps the 2K ones in afterwards when the scrolling is still.
+  - Sound: a playing song silences the garden (out in 0.4 s, back in 0.8 s), closing the notebook fades the
+    song out, and the mute tag covers the songs too (`sound.song`, `player.fadeOut`, `player.mute`).
+  - Lag on the later pages: turned leaves lying under other leaves were all still being drawn in full
+    (`cover()` in `book.ts` now hides them). The resolution scaler counted an average, which a steady 48 to 55
+    frames a second never tripped; it now counts late frames (`lib/quality.ts`). A scaler step no longer
+    measures and fits every page again. The shadow map is redrawn every other frame while the book moves.
+  - `?scale=1` in the address pins the render scale, for timing one page against another.
 
 ## Still open
 
@@ -295,5 +331,5 @@ reading and poetry, and I like meeting new people and hearing their stories. (Wo
 - Skip intro works and the contact button shows on every page.
 - It looks right at phone width and desktop width.
 - The notebook reads as a leather book.
-- The two left-off project names appear nowhere in the code.
+- The one left-off project name appears nowhere in the code.
 - Only the three fonts are used.

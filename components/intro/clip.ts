@@ -19,12 +19,15 @@ export class Clip {
   private bitmaps = new Map<number, ImageBitmap>();
   private decoding = new Set<number>();
   private stopped = false;
+  private halted = false;
+  private cancel = new AbortController();
 
   // A layer has no manifest of its own: its length comes from its parent's.
   constructor(
     private dir: string,
     private loops = false,
     frames = 0,
+    private patient = false, // fetched at low priority: wanted late, so other downloads go first
   ) {
     this.frames = frames;
     this.blobs = new Array(frames);
@@ -48,7 +51,7 @@ export class Clip {
     if (!this.frames) await this.open();
     const one = async (i: number) => {
       try {
-        const res = await fetch(`${this.dir}/${String(i).padStart(4, "0")}.webp`);
+        const res = await fetch(`${this.dir}/${String(i).padStart(4, "0")}.webp`, { signal: this.cancel.signal, priority: this.patient ? "low" : "auto" });
         if (res.ok && !this.stopped) this.blobs[i] = await res.blob();
       } catch {}
     };
@@ -56,7 +59,7 @@ export class Clip {
     // a few downloads at a time, in order, so the start of the clip arrives first
     let next = 0;
     const worker = async () => {
-      while (!this.stopped && next < this.frames) await one(next++);
+      while (!this.stopped && !this.halted && next < this.frames) await one(next++);
     };
     await Promise.all(Array.from({ length: 5 }, worker));
   }
@@ -110,7 +113,14 @@ export class Clip {
     this.bitmaps.clear();
   }
 
+  // Stop downloading, and drop the downloads in flight. What has arrived can still be shown.
+  halt() {
+    this.halted = true;
+    this.cancel.abort();
+  }
+
   dispose() {
+    this.halt();
     this.stopped = true;
     this.rest();
     this.blobs = [];

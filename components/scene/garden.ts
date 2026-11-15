@@ -56,8 +56,8 @@ export type GardenOpts = {
   // the cover's own size, for the leaf and clippings lying on it
   cover: { w: number; l: number };
   wind: { value: number };
-  maxAniso: number;
-  track: (n: number) => void;
+  // one of the photo sheets as a texture; the scene makes and keeps them, and loads them
+  photo: (url: string) => THREE.Texture;
 };
 
 // `litter` sits in the cover's own space (origin at the spine edge) so it can ride on the cover.
@@ -194,16 +194,7 @@ type Card = {
 export function growGarden(o: GardenOpts): Garden {
   const objects: THREE.Object3D[] = [];
   const disposables: { dispose: () => void }[] = [];
-  const loader = new THREE.TextureLoader();
-
-  const photo = (url: string) => {
-    o.track(1);
-    const t = loader.load(url, () => o.track(-1), undefined, () => o.track(-1));
-    t.colorSpace = THREE.SRGBColorSpace;
-    t.anisotropy = o.maxAniso;
-    disposables.push(t);
-    return t;
-  };
+  const photo = o.photo;
 
   let seed = 5;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);

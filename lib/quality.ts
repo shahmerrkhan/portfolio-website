@@ -42,26 +42,38 @@ export function pickQuality(): Quality {
   return q;
 }
 
-// Watches frame times. When they stay slow it lowers the render scale a step,
-// down to a floor. It never raises it again, so the picture does not pump.
-export function createScaler(floor = 0.55) {
-  let scale = 1;
-  let average = 16;
+// Watches frame times. When too many frames in a row of sixty come late it lowers the
+// render scale a step, down to a floor. It never raises it again, so the picture does
+// not pump.
+//
+// "Late" is a frame that took over 20 ms: on an ordinary 60 Hz screen that is a missed
+// refresh. It used to wait for the average to pass 21 ms, which a garden running at a
+// steady 48 to 55 frames a second never did, so it sat there juddering and was never
+// helped. Counting late frames catches that, and a single long frame (a page being laid
+// out, a texture arriving) no longer costs the picture its sharpness for good.
+// `fixed` (from ?scale= in the address) holds the scale where it starts, for measuring.
+const WINDOW = 60;
+export function createScaler(start = 1, fixed = false, floor = 0.55) {
+  let scale = start;
   let frames = 0;
+  let late = 0;
+  let total = 0;
   return {
     get scale() {
       return scale;
     },
     // feed it each frame's duration; returns true when the scale just changed
     sample(ms: number) {
-      if (ms > 250) return false; // tab was in the background
-      average += (ms - average) * 0.08;
-      if (++frames < 50) return false;
-      frames = 0;
-      if (average > 21 && scale > floor) {
+      if (fixed || ms > 250) return false; // tab was in the background
+      total += ms;
+      if (ms > 20) late++;
+      if (++frames < WINDOW) return false;
+      const share = late / WINDOW;
+      const average = total / WINDOW;
+      frames = late = total = 0;
+      if (share > 0.15 && scale > floor) {
         // a bigger miss gets a bigger step
-        scale = Math.max(floor, scale * (average > 30 ? 0.78 : 0.88));
-        average = 16;
+        scale = Math.max(floor, scale * (average > 28 ? 0.78 : 0.88));
         return true;
       }
       return false;

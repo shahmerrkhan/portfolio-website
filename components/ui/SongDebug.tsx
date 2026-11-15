@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { player } from "@/lib/player";
+import { sound } from "@/lib/sound";
 
 // Only with ?debug=1 in the address: a small panel along the bottom that says what the
 // last tapped song did, so a silent song can be explained instead of guessed at.
@@ -12,9 +13,11 @@ const never = () => () => {};
 export default function SongDebug() {
   const on = useSyncExternalStore(never, () => new URLSearchParams(window.location.search).has("debug"), () => false);
   const r = useSyncExternalStore(player.watch, () => player.report, () => null);
+  const garden = useSyncExternalStore(sound.subscribe, () => sound.garden, () => "");
   if (!on) return null;
   return (
     <aside className="song-debug" aria-label="Song debug">
+      <p>garden sound: {garden}</p>
       {!r ? (
         <p>song debug: tap a song</p>
       ) : (

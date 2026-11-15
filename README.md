@@ -35,13 +35,13 @@ There are seven pages:
 
 1. **Hi**, who I am and what I'm doing right now
 2. **My story**
-3. **Work**, the things I've built, where I've worked and my GitHub
-4. **What I believe**
+3. **Work**, the things I've built and where I'm working now (Magic Hour, Unbound, Sportiner)
+4. **What I believe**, with the rest of my experience on the facing page and my GitHub graph underneath
 5. **Fun**, songs, books and hobbies
 6. **Guestbook**, leave me a note
 7. **Secrets**, for whatever you found in the garden
 
-The storm has wind and thunder under the voice, and the garden has birds. Nothing makes a sound until you've tapped in, and there's a tag in the corner to mute all of it. The skip intro button is there from the very first screen if you just want the book.
+The storm has wind and thunder under the voice, and the garden has birds. Play a song and the birds go quiet so you only hear the song, then they come back when it stops. Close the notebook and the song stops too. Nothing makes a sound until you've tapped in, and there's a tag in the corner to mute all of it, songs included. The skip intro button is there from the very first screen if you just want the book.
 
 It was built for phones first. On a phone the book shows one page at a time and the camera slides across the spread. Devices that can't run the 3D scene smoothly, and anyone with reduced motion turned on, get a flat version instead: a still photo of the same garden and book with a simple page turn.
 
@@ -51,6 +51,7 @@ The lightning is kept gentle on purpose. It never flashes more than three times 
 
 - A live GitHub contributions graph, pulled through the site's own server route
 - Song previews you can play right on the page, from iTunes, with Deezer as a backup for browsers that can't play Apple's files
+- A shelf of twenty books I've read. Tap a spine to see which one it is
 - A guestbook where notes only show up after I approve them
 - Hidden daisies in the garden. Find them and they show up on the last page
 - A contact tag in the corner with my LinkedIn and email
@@ -104,15 +105,16 @@ components/
   pages/        the seven notebook pages
   ui/           contact tag, mute, chat bubble, page tabs
 content/site.ts every word on the site, in one file
-lib/            scroll plan, sound, songs lookup, database
+lib/            scroll plan, sound, song player, garden asset loading, quality tiers, database
 public/         frames, textures, audio, logos and the flat fallback image
-scripts/        how the storm frames and the fallback still were made
+scripts/        how the storm frames, the fallback still, the closed-book poster and the bookshelf picture were made
 ```
 
 ## Credits
 
 - Leather, ground and the `meadow_2` HDRI sky from [Poly Haven](https://polyhaven.com) (CC0)
 - Paper, grass, daisy and leaf cut-outs from [ambientCG](https://ambientcg.com) (CC0)
+- The bookshelf is painted from Poly Haven photos of book cloth, linen, hessian, leather and wood (`book_pattern`, `rough_linen`, `hessian_230`, `leather_white`, `fabric_leather_02`, `dark_wood`, all CC0), plus the notebook's own leather and paper
 - The garden sound is "Birds singing in garden" by ezwa on [Wikimedia Commons](https://commons.wikimedia.org), released into the public domain
 - The thunder, the wind and the portal swoosh are not recordings. They're made in the browser with the Web Audio API (`lib/sound.ts`)
 - The voiceover was made with [ElevenLabs](https://elevenlabs.io)

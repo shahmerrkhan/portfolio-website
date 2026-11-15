@@ -124,8 +124,23 @@ export function createBook(m: BookMaterials): Book {
     mesh.castShadow = mesh.receiveShadow = true;
     mesh.frustumCulled = false;
     hinge.add(mesh);
-    return { g, k, t: -1, paper, line: new Float32Array((SEG + 1) * 2), settle: 0, corner: 0, stale: false };
+    return { g, k, t: -1, mesh, paper, line: new Float32Array((SEG + 1) * 2), settle: 0, corner: 0, stale: false };
   });
+
+  // A leaf lying flat under another cannot be seen, but it was still being drawn, and in
+  // full: turned leaves are drawn oldest first, so each one painted the whole page before
+  // the next covered it. With four leaves turned that was four pages of lit, shadowed
+  // paper for one visible page, which is what made the later pages slow. So a leaf that
+  // is flat with another flat on top of it is not drawn. The one straight under the top
+  // leaf comes back whenever the top one moves at all: while its free edge is still
+  // settling after a turn, and while its corner is picked up.
+  const cover = () => {
+    leaves.forEach((leaf, j) => {
+      const above = leaf.t >= 1 ? leaves[j + 1] : leaf.t <= 0 ? leaves[j - 1] : null; // the leaf lying on this one
+      const flat = !!above && above.t === leaf.t && above.settle === 0 && above.corner === 0;
+      leaf.mesh.visible = !flat;
+    });
+  };
 
   const bendLeaf = (leaf: (typeof leaves)[number], t: number) => {
     if (leaf.t === t && !leaf.stale) return;
@@ -164,6 +179,7 @@ export function createBook(m: BookMaterials): Book {
     leaf.g.computeVertexNormals();
   };
   leaves.forEach((leaf) => bendLeaf(leaf, 0));
+  cover();
 
   return {
     group,
@@ -173,6 +189,7 @@ export function createBook(m: BookMaterials): Book {
     },
     setTurns: (turned) => {
       for (const leaf of leaves) bendLeaf(leaf, Math.min(1, Math.max(0, turned - leaf.k)));
+      cover();
     },
     leafLine: (k) => leaves[k].line,
     setSettle: (k, amount) => {
@@ -181,6 +198,7 @@ export function createBook(m: BookMaterials): Book {
       leaf.settle = amount;
       leaf.stale = true;
       bendLeaf(leaf, leaf.t);
+      cover();
     },
     setCorner: (k, amount) => {
       const leaf = leaves[k];
@@ -188,6 +206,7 @@ export function createBook(m: BookMaterials): Book {
       leaf.corner = amount;
       leaf.stale = true;
       bendLeaf(leaf, leaf.t);
+      cover();
     },
     dispose: () => [...geometries, ...materials].forEach((x) => x.dispose()),
   };

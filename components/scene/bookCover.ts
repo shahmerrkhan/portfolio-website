@@ -9,7 +9,8 @@ export const COVER_L = 2.9;
 
 export type CoverMaps = { map: THREE.CanvasTexture; normalMap: THREE.CanvasTexture; armMap: THREE.CanvasTexture };
 
-type Sources = { diff: HTMLImageElement; nor: HTMLImageElement; arm: HTMLImageElement };
+type Photo = ImageBitmap | HTMLImageElement;
+type Sources = { diff: Photo; nor: Photo; arm: Photo };
 
 const TILES_ACROSS = 1.1; // how many times the leather photo repeats across the cover width
 
@@ -20,7 +21,7 @@ function canvas(w: number, h: number) {
   return [c, c.getContext("2d", { willReadFrequently: true })!] as const;
 }
 
-function tile(ctx: CanvasRenderingContext2D, img: HTMLImageElement, w: number, h: number) {
+function tile(ctx: CanvasRenderingContext2D, img: Photo, w: number, h: number) {
   const size = w / TILES_ACROSS;
   for (let y = 0; y < h; y += size) for (let x = 0; x < w; x += size) ctx.drawImage(img, x, y, size, size);
 }

@@ -45,3 +45,6 @@ next-env.d.ts
 .impeccable/
 .claude/
 *.log
+
+# photographs fetched by scripts/bookshelf/render.mjs (only used to paint the shelf picture)
+/scripts/bookshelf/textures/

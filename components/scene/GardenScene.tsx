@@ -6,6 +6,7 @@ import { collect, fit, forget, place, setSizes } from "@/components/pages/bind";
 import { BookContext } from "@/components/pages/context";
 import Tabs from "@/components/ui/Tabs";
 import { secrets, words } from "@/content/site";
+import { player } from "@/lib/player";
 import { leafOf, locate, makePlan } from "@/lib/scrollPlan";
 import type { SceneRig, View } from "./scene";
 
@@ -19,6 +20,12 @@ import type { SceneRig, View } from "./scene";
 //
 // `shown` is false while the intro is in front: everything loads, nothing scrolls.
 // `still` is only for scripts/capture-still.mjs, which photographs the empty open book.
+// The closed book is framed by the screen's height on a wide screen and by its width on
+// a narrow one (scene.ts, `shot`). The change comes where the two give the same distance:
+// (cover width x 1.42) / (cover length x 1.3) = 0.791. Each photograph is taken far
+// wider, or far taller, than any screen, so "cover" crops it to exactly the camera's view.
+const POSTER_WIDE_FROM = "791/1000";
+
 export default function GardenScene({ shown, onFail, still = false }: { shown: boolean; onFail: () => void; still?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -31,6 +38,14 @@ export default function GardenScene({ shown, onFail, still = false }: { shown: b
   const [page, setPage] = useState(-1); // -1 while the book is closed
   const [found, setFound] = useState<number[]>([]);
   const [openSecret, setOpenSecret] = useState<number | null>(null);
+  const [posterGone, setPosterGone] = useState(false);
+
+  // once the garden has faded in over it, the photograph has nothing left to do
+  useEffect(() => {
+    if (!ready) return;
+    const t = window.setTimeout(() => setPosterGone(true), 1200);
+    return () => window.clearTimeout(t);
+  }, [ready]);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,7 +110,14 @@ export default function GardenScene({ shown, onFail, still = false }: { shown: b
       };
 
       try {
-        rig = build(canvas, quality, { onReady: () => setReady(true), onResize: () => relayout(), still });
+        rig = build(canvas, quality, {
+          onReady: () => {
+            setReady(true);
+            control.current?.show(shownNow.current); // the scrolling starts now, if the intro is out of the way
+          },
+          onResize: () => relayout(),
+          still,
+        });
       } catch {
         onFail(); // no WebGL here: the flat version takes over
         return;
@@ -159,7 +181,10 @@ export default function GardenScene({ shown, onFail, still = false }: { shown: b
       }
 
       control.current = {
+        // nothing scrolls until the garden can be drawn: until then the picture of the
+        // closed book is all there is to see, and it cannot open
         show: (on) => {
+          on = on && !!rig?.ready;
           visible = on;
           rig?.setActive(on);
           if (on) window.scrollTo(0, 0);
@@ -199,6 +224,13 @@ export default function GardenScene({ shown, onFail, still = false }: { shown: b
     };
   }, [onFail, still]);
 
+  // Closing the notebook stops whatever song is playing, with a short fade. The songs page
+  // hears about it and puts its button back, which also lets the garden sound return
+  // (unless the site is muted). Moving between open pages leaves a song alone.
+  useEffect(() => {
+    if (page < 0) player.fadeOut();
+  }, [page]);
+
   useEffect(() => {
     shownNow.current = shown;
     control.current?.show(shown);
@@ -212,6 +244,14 @@ export default function GardenScene({ shown, onFail, still = false }: { shown: b
 
   return (
     <div className="garden" data-shown={shown} data-still={still}>
+      {/* A photograph of this same closed book from this same camera, there at once.
+          The real garden fades in over it when it is ready, and then it is taken away. */}
+      {!still && !posterGone && (
+        <picture>
+          <source media={`(min-aspect-ratio: ${POSTER_WIDE_FROM})`} srcSet="/fallback/closed-wide.webp" />
+          <img className="garden-poster" src="/fallback/closed-tall.webp" alt="" fetchPriority="high" />
+        </picture>
+      )}
       <canvas ref={canvasRef} className="garden-canvas" data-ready={ready} aria-hidden="true" />
       <div ref={probeRef} className="screen-probe" />
       <div ref={trackRef} className="garden-track" />
@@ -232,6 +272,11 @@ export default function GardenScene({ shown, onFail, still = false }: { shown: b
       </div>
       {shown && <Tabs page={page} onGo={(n) => control.current?.go(n)} />}
       {shown && ready && page < 0 && <p className="tag garden-hint">{words.openHint}</p>}
+      {shown && !ready && !still && (
+        <p className="tag garden-hint garden-loading" role="status">
+          {words.loading}
+        </p>
+      )}
     </div>
   );
 }

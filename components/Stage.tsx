@@ -36,10 +36,10 @@ export default function Stage() {
   const [phase, setPhase] = useState<Phase>("intro");
 
   const onFail = useCallback(() => setNoWebGL(true), []);
-  const onDone = useCallback(() => {
+  const onDone = useCallback((skipped: boolean) => {
     setPhase("leaving"); // the intro fades while the garden shows through
     void sound.startGarden();
-    window.setTimeout(() => setPhase("garden"), 1500);
+    window.setTimeout(() => setPhase("garden"), skipped ? 450 : 1500); // a skip fades faster (garden.css)
   }, []);
 
   if (detected === "still") return <GardenScene shown still onFail={onFail} />;

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { HDRLoader } from "three/examples/jsm/loaders/HDRLoader.js";
+import { bytes, files, forget, picture, type Picture } from "@/lib/assets";
 import { createScaler, type Quality } from "@/lib/quality";
 import { BOOK_H, COVER_LANDING, COVER_PIVOT, createBook, HINGE_X, LEAF_CLIMB, LEAF_REST, LEAVES, OPEN_ANGLE, PAGE_L, PAGE_TOP, PAGE_W } from "./book";
 import { buildCover, COVER_L, COVER_W, type CoverMaps } from "./bookCover";
@@ -40,6 +41,7 @@ export type SceneRig = {
   liftCorner: (on: boolean) => void; // the loose corner of the top right-hand leaf
   pokeFlower: (i: number) => void; // a secret flower was touched: make it bob
   setActive: (on: boolean) => void; // stop drawing while something covers the garden
+  readonly ready: boolean; // the first whole picture can be drawn
   dispose: () => void;
 };
 
@@ -56,7 +58,6 @@ const FOV = 36;
 const SUN_DIR = new THREE.Vector3(-0.64, 0.58, -0.5).normalize(); // mid-afternoon, from the upper left
 const CHESTNUT = "#e8c4a0";
 const CREAM = "#cdbd97";
-const T = "/textures";
 const STILL_HALF_H = 2.5; // half the height of ground in the fallback picture, in scene units
 
 // One pass after the scene: depth of field, then vignette, tone mapping, a little
@@ -201,7 +202,9 @@ export function build(canvas: HTMLCanvasElement, q: Quality, opts: SceneOpts): S
   renderer.shadowMap.autoUpdate = false;
   let shadowFrames = 0;
   const maxAniso = renderer.capabilities.getMaxAnisotropy();
-  const scaler = createScaler();
+  // ?scale=0.8 in the address pins the render scale, so one page can be timed against another
+  const pinned = Number(new URLSearchParams(window.location.search).get("scale")) || 0;
+  const scaler = createScaler(pinned ? Math.min(1, pinned) : undefined, pinned > 0);
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#141a10");
@@ -225,22 +228,37 @@ export function build(canvas: HTMLCanvasElement, q: Quality, opts: SceneOpts): S
   scene.add(sun, sun.target);
 
   // ---------- loading ----------
-  const texLoader = new THREE.TextureLoader();
+  // Nothing is drawn until everything for the first picture is here. Each file is decoded
+  // off the main thread (lib/assets.ts); then, in `finish` below, the pictures are handed
+  // to the graphics card one at a time and the shaders are compiled without waiting on
+  // them. So the intro in front never stutters, and the garden's first frame is whole:
+  // drawing earlier only meant compiling every shader twice, once without the sky light.
+  //
+  // Every device starts on the 1K photos. Where the 2K ones are wanted they are swapped
+  // in afterwards, one at a time, when nobody is scrolling (see `sharpen`).
   const disposables: { dispose: () => void }[] = [shade];
   let pending = 0;
   let dead = false;
   let ready = false;
+  let finishing = false;
+  const toUpload: THREE.Texture[] = [];
+  const better: { t: THREE.Texture; url: string }[] = [];
+  const used: string[] = [];
   const track = (n: number) => {
     pending += n;
-    shadowFrames = 6;
-    if (pending === 0 && !ready && !dead) {
-      ready = true;
-      onReady();
+    if (pending === 0 && !finishing && !dead) {
+      finishing = true;
+      void finish();
     }
   };
-  const tex = (url: string, rx: number, ry: number, colour = false) => {
-    track(1);
-    const t = texLoader.load(url, () => track(-1), undefined, () => track(-1));
+  const put = (t: THREE.Texture, p: Picture) => {
+    t.image = p.image;
+    t.flipY = !p.flipped;
+    t.needsUpdate = true;
+  };
+  const made = new Map<string, THREE.Texture>();
+  const blank = (rx: number, ry: number, colour: boolean) => {
+    const t = new THREE.Texture();
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     t.repeat.set(rx, ry);
     t.anisotropy = maxAniso;
@@ -248,13 +266,36 @@ export function build(canvas: HTMLCanvasElement, q: Quality, opts: SceneOpts): S
     disposables.push(t);
     return t;
   };
-  const image = (url: string) =>
-    new Promise<HTMLImageElement>((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = url;
-    });
+  const fill = (t: THREE.Texture, url: string) => {
+    track(1);
+    used.push(url);
+    picture(url, true)
+      .then((p) => {
+        if (dead) return;
+        put(t, p);
+        toUpload.push(t);
+      })
+      .catch(() => {})
+      .finally(() => track(-1));
+  };
+  // `sharp`: the same picture at 2K, for the devices that get it
+  const tex = (url: string, rx: number, ry: number, colour = false, sharp = "") => {
+    const t = blank(rx, ry, colour);
+    fill(t, url);
+    if (sharp && sharp !== url) better.push({ t, url: sharp });
+    return t;
+  };
+  // the garden's photo sheets: one texture each, kept when the lawn is grown again for a new screen shape
+  const sheet = (url: string) => {
+    let t = made.get(url);
+    if (!t) {
+      t = blank(1, 1, true);
+      t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+      fill(t, url);
+      made.set(url, t);
+    }
+    return t;
+  };
 
   // ---------- materials ----------
   // The photo's own shine is too high for worn leather, so lift the roughness floor.
@@ -277,12 +318,11 @@ export function build(canvas: HTMLCanvasElement, q: Quality, opts: SceneOpts): S
     disposables.push(m);
     return m;
   };
-  const leatherFile = (kind: string) => `${T}/leather/brown_leather_${kind}${q.textures}.jpg`;
   const tiledLeather = (rx: number, ry: number) => {
     const m = leather();
-    const arm = tex(leatherFile("arm"), rx, ry);
-    m.map = tex(leatherFile("diff"), rx, ry, true);
-    m.normalMap = tex(leatherFile("nor"), rx, ry);
+    const arm = tex(files.leather("arm", ""), rx, ry, false, files.leather("arm", q.textures));
+    m.map = tex(files.leather("diff", ""), rx, ry, true, files.leather("diff", q.textures));
+    m.normalMap = tex(files.leather("nor", ""), rx, ry, false, files.leather("nor", q.textures));
     m.aoMap = m.roughnessMap = arm;
     m.color.set(CHESTNUT);
     return m;
@@ -292,9 +332,9 @@ export function build(canvas: HTMLCanvasElement, q: Quality, opts: SceneOpts): S
   const strapMat = tiledLeather(0.45, 0.25);
 
   const paperMaps = {
-    map: tex(`${T}/paper/Paper001_diff.jpg`, 1, 1, true),
-    normalMap: tex(`${T}/paper/Paper001_nor.jpg`, 1, 1),
-    roughnessMap: tex(`${T}/paper/Paper001_rough.jpg`, 1, 1),
+    map: tex(files.paper("diff"), 1, 1, true),
+    normalMap: tex(files.paper("nor"), 1, 1),
+    roughnessMap: tex(files.paper("rough"), 1, 1),
   };
   const paperMat = new THREE.MeshStandardMaterial({ ...paperMaps, roughness: 1, color: CREAM, side: THREE.DoubleSide });
   // endpaper inside the cover: the same paper, a shade browner
@@ -308,44 +348,88 @@ export function build(canvas: HTMLCanvasElement, q: Quality, opts: SceneOpts): S
   const contactMat = new THREE.MeshBasicMaterial({ map: contactMap, transparent: true, depthWrite: false, color: 0x000000 });
   disposables.push(paperMat, liningMat, edgesMap, pageEdgesMat, brassMat, ribbonMat, groundMat, contactMap, contactMat);
 
-  // the cover's maps are painted once from the leather photos
-  let cover: CoverMaps | null = null;
+  // the cover's maps are painted from the leather photos: once from the 1K ones, and
+  // again from the 2K ones later on the devices that get them
+  const paintCover = async (size: "" | "_2k") => {
+    const kinds = ["diff", "nor", "arm"] as const;
+    const urls = kinds.map((k) => files.leather(k, size));
+    used.push(...urls);
+    const [diff, nor, arm] = await Promise.all(urls.map((u) => picture(u, false)));
+    const maps = await buildCover(
+      { diff: diff.image, nor: nor.image, arm: arm.image },
+      {
+        height: q.coverSize,
+        chestnut: true,
+        name: "Shahmeer Khan",
+        nameFont: getComputedStyle(document.documentElement).getPropertyValue("--font-apple") || "cursive",
+      },
+    );
+    for (const p of [diff, nor, arm]) if (p.image instanceof ImageBitmap) p.image.close();
+    forget(urls.map((u) => u)); // the closed copies must not be handed out again
+    return maps;
+  };
+  // The material has its three textures from the start, empty, so its shader can be
+  // compiled before the painting is done. A painting is then only a change of picture
+  // (the 2K one is the same size on the canvas, so the storage is used again).
+  const coverTex = (colour: boolean) => {
+    const t = new THREE.Texture();
+    if (colour) t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 8;
+    disposables.push(t);
+    return t;
+  };
+  const cover = { map: coverTex(true), normalMap: coverTex(false), armMap: coverTex(false) };
+  coverMat.map = cover.map;
+  coverMat.normalMap = cover.normalMap;
+  coverMat.aoMap = coverMat.roughnessMap = cover.armMap;
+  const wearCover = (maps: CoverMaps) => {
+    for (const k of ["map", "normalMap", "armMap"] as const) {
+      cover[k].image = maps[k].image;
+      cover[k].needsUpdate = true;
+    }
+  };
   track(1);
-  Promise.all([image(leatherFile("diff")), image(leatherFile("nor")), image(leatherFile("arm"))])
-    .then(([diff, nor, arm]) =>
-      buildCover(
-        { diff, nor, arm },
-        {
-          height: q.coverSize,
-          chestnut: true,
-          name: "Shahmeer Khan",
-          nameFont: getComputedStyle(document.documentElement).getPropertyValue("--font-apple") || "cursive",
-        },
-      ),
-    )
+  paintCover("")
     .then((maps) => {
-      if (dead) return Object.values(maps).forEach((t) => t.dispose());
-      cover = maps;
-      coverMat.map = maps.map;
-      coverMat.normalMap = maps.normalMap;
-      coverMat.aoMap = coverMat.roughnessMap = maps.armMap;
-      coverMat.needsUpdate = true;
+      if (dead) return;
+      wearCover(maps);
+      toUpload.push(cover.map, cover.normalMap, cover.armMap);
     })
     .catch(() => {})
     .finally(() => track(-1));
 
+  // The sky light. A plain grey sky of the same size stands in until the real one
+  // arrives: the shaders are built for "lit by a sky this big", so they can be compiled
+  // straight away and are still the right ones when the real sky takes its place.
+  const SKY_W = 1024;
+  const SKY_H = 512;
+  const sky = (data: THREE.TypedArray, w: number, h: number, type: THREE.TextureDataType) => {
+    const env = new THREE.DataTexture(data, w, h, THREE.RGBAFormat, type);
+    env.colorSpace = THREE.LinearSRGBColorSpace;
+    env.minFilter = env.magFilter = THREE.LinearFilter;
+    env.generateMipmaps = false;
+    env.flipY = true;
+    env.mapping = THREE.EquirectangularReflectionMapping;
+    env.needsUpdate = true;
+    return env;
+  };
+  const greySky = sky(new Uint16Array(SKY_W * SKY_H * 4).fill(THREE.DataUtils.toHalfFloat(0.5)), SKY_W, SKY_H, THREE.HalfFloatType);
+  scene.environment = greySky;
   track(1);
-  new HDRLoader().load(
-    `${T}/hdri/meadow_2.hdr`,
-    (env) => {
-      if (dead) return env.dispose();
-      env.mapping = THREE.EquirectangularReflectionMapping;
-      scene.environment = env;
-      track(-1);
-    },
-    undefined,
-    () => track(-1),
-  );
+  used.push(files.sky);
+  bytes(files.sky)
+    .then((data) => {
+      if (dead) return;
+      const hdr = new HDRLoader().parse(data);
+      if (!hdr.data || !hdr.width || !hdr.height || !hdr.type) return;
+      // (a sky of another size would need other shaders; the first draw would simply build them)
+      const real = sky(hdr.data, hdr.width, hdr.height, hdr.type);
+      scene.environment = real;
+      greySky.dispose();
+      disposables.push(real);
+    })
+    .catch(() => {})
+    .finally(() => track(-1));
 
   // ---------- the book, its contact shadow, the ground ----------
   const book = createBook({
@@ -373,10 +457,9 @@ export function build(canvas: HTMLCanvasElement, q: Quality, opts: SceneOpts): S
   ground.receiveShadow = true;
   scene.add(ground);
   {
-    const file = (kind: string) => `${T}/ground/forrest_ground_01_${kind}${q.textures}.jpg`;
-    const arm = tex(file("arm"), 1, 1);
-    groundMat.map = tex(file("diff"), 1, 1, true);
-    groundMat.normalMap = tex(file("nor"), 1, 1);
+    const arm = tex(files.ground("arm", ""), 1, 1, false, files.ground("arm", q.textures));
+    groundMat.map = tex(files.ground("diff", ""), 1, 1, true, files.ground("diff", q.textures));
+    groundMat.normalMap = tex(files.ground("nor", ""), 1, 1, false, files.ground("nor", q.textures));
     groundMat.aoMap = groundMat.roughnessMap = arm;
   }
   disposables.push(contactGeo, groundGeo);
@@ -411,8 +494,7 @@ export function build(canvas: HTMLCanvasElement, q: Quality, opts: SceneOpts): S
       press,
       cover: { w: COVER_W, l: COVER_L },
       wind,
-      maxAniso,
-      track,
+      photo: sheet,
     });
     garden.objects.forEach((o) => scene.add(o));
     garden.litter.forEach((o) => book.coverPivot.add(o));
@@ -425,7 +507,7 @@ export function build(canvas: HTMLCanvasElement, q: Quality, opts: SceneOpts): S
   // ---------- the secret flowers ----------
   // Five daisies a shade of blue, a little bigger than the rest. They are put where the
   // open-book shot can see them, clear of the book and of the corners the buttons use.
-  const daisyMap = tex(SHEETS.daisy.url, 1, 1, true);
+  const daisyMap = sheet(SHEETS.daisy.url);
   const secretMat = new THREE.MeshStandardMaterial({ map: daisyMap, alphaTest: 0.4, color: "#aebcff", roughness: 0.7, side: THREE.DoubleSide });
   const secretDepth = new THREE.MeshDepthMaterial({ map: daisyMap, alphaTest: 0.4 });
   disposables.push(secretMat, secretDepth);
@@ -653,18 +735,24 @@ export function build(canvas: HTMLCanvasElement, q: Quality, opts: SceneOpts): S
     };
   };
 
+  // The number of pixels drawn, and nothing else. This is all that changes when the
+  // scaler takes the resolution down a step: the pages are where they were, so the text
+  // must not be measured and fitted again (that used to happen, and cost a visible hitch).
+  const rescale = () => {
+    renderer.setPixelRatio(q.pixelRatio * scaler.scale);
+    renderer.setSize(cssW, cssH, false);
+    const size = renderer.getDrawingBufferSize(new THREE.Vector2());
+    target.setSize(size.x, size.y);
+    post.uniforms.uPx.value.set(1 / size.x, 1 / size.y);
+    post.uniforms.uMaxBlur.value = size.y * 0.011;
+  };
   const resize = () => {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
     if (!w || !h) return;
     cssW = w;
     cssH = h;
-    renderer.setPixelRatio(q.pixelRatio * scaler.scale);
-    renderer.setSize(w, h, false);
-    const size = renderer.getDrawingBufferSize(new THREE.Vector2());
-    target.setSize(size.x, size.y);
-    post.uniforms.uPx.value.set(1 / size.x, 1 / size.y);
-    post.uniforms.uMaxBlur.value = size.y * 0.011;
+    rescale();
 
     aspect = w / h;
     wide = aspect > 1.15 || !!opts.still;
@@ -701,11 +789,14 @@ export function build(canvas: HTMLCanvasElement, q: Quality, opts: SceneOpts): S
     turned = Math.min(LEAVES, Math.max(0, turned));
     over = Math.min(1, Math.max(0, over));
     if (amount !== open || turned !== turns || over !== side) {
+      // the camera sliding from one page to the other moves no shadow
+      const bookMoved = amount !== open || turned !== turns;
       for (let k = 0; k < LEAVES; k++) {
         const was = Math.min(1, Math.max(0, turns - k));
         const now = Math.min(1, Math.max(0, turned - k));
         if (was > 0 && was < 1 && (now === 0 || now === 1) && q.wind) landed[k] = clock;
       }
+      moved = performance.now();
       open = amount;
       turns = turned;
       side = over;
@@ -713,7 +804,7 @@ export function build(canvas: HTMLCanvasElement, q: Quality, opts: SceneOpts): S
       book.setTurns(turns);
       press.value = smooth(0.7, 1, open);
       aim();
-      shadowFrames = 2;
+      if (bookMoved) shadowFrames = 2;
     }
     return measure();
   };
@@ -728,13 +819,23 @@ export function build(canvas: HTMLCanvasElement, q: Quality, opts: SceneOpts): S
   let frames = 0;
   let since = last;
   let active = true;
+  let drew = false; // whether the frame before this one was drawn
+  let shadowSkipped = false;
+  const moving = () => performance.now() - moved < 120;
   const frame = (now: number) => {
-    if (dead) return;
-    if (!opts.still && scaler.sample(now - last)) resize();
+    // nothing is drawn until the whole first picture can be (see `finish`)
+    if (dead || !ready) return;
+    // nothing to draw for while the intro is in front
+    if (!active && shadowFrames <= 0) {
+      drew = false;
+      last = now;
+      return;
+    }
+    // only time one drawn frame against the next: the intro's frames are not the garden's
+    if (drew && !opts.still && scaler.sample(now - last)) rescale();
+    drew = true;
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    // nothing to draw for while the intro is in front, once everything has loaded
-    if (!active && ready && shadowFrames <= 0) return;
     const t = now / 1000;
     clock = t;
     if (q.wind) wind.value = t;
@@ -794,9 +895,17 @@ export function build(canvas: HTMLCanvasElement, q: Quality, opts: SceneOpts): S
         pos.needsUpdate = true;
       }
     }
-    if (pending > 0 || shadowFrames > 0) {
-      renderer.shadowMap.needsUpdate = true;
-      shadowFrames--;
+    // The shadow map holds every blade of grass, so drawing it is half a frame's work.
+    // While the book is moving it is redrawn every other frame: a shadow one frame late
+    // on a turning leaf cannot be seen, and the turn keeps its frame rate.
+    if (shadowFrames > 0) {
+      if (moving() && !shadowSkipped) {
+        shadowSkipped = true; // left for the next frame
+      } else {
+        shadowSkipped = false;
+        renderer.shadowMap.needsUpdate = true;
+        shadowFrames--;
+      }
     }
     renderer.setRenderTarget(target);
     renderer.render(scene, camera);
@@ -814,6 +923,94 @@ export function build(canvas: HTMLCanvasElement, q: Quality, opts: SceneOpts): S
     }
   };
 
+  // ---------- the end of loading ----------
+  // The shaders, compiled in the background where the browser can, starting now while
+  // the photos are still coming down. They are built for the off-screen target the scene
+  // is drawn into, which is what drawing will ask for.
+  const compile = async () => {
+    try {
+      renderer.setRenderTarget(target);
+      const one = renderer.compileAsync(scene, camera);
+      renderer.setRenderTarget(null);
+      await one;
+      await renderer.compileAsync(postScene, postCamera);
+    } catch {}
+  };
+  const compiled = compile();
+
+  const pause = () => new Promise<void>((r) => window.setTimeout(r, 0));
+  // A decoded photo is 4 MB at 1K and 16 MB at 2K. Once it is on the graphics card the
+  // copy in memory is only weight, so it is let go. (Two textures can share one photo,
+  // which is why this waits until all of them are up.)
+  const close = (list: THREE.Texture[]) => {
+    for (const t of list) if (t.image instanceof ImageBitmap) t.image.close();
+  };
+  async function finish() {
+    // a few milliseconds of them at a time, so whatever is on screen meanwhile keeps moving
+    let began = performance.now();
+    for (const t of toUpload) {
+      renderer.initTexture(t);
+      if (performance.now() - began < 8) continue;
+      await pause();
+      if (dead) return;
+      began = performance.now();
+    }
+    close(toUpload);
+    toUpload.length = 0;
+    await compiled;
+    if (dead) return;
+    // once more now the real sky is in: the shaders are already made, this only prepares the sky's light
+    await compile();
+    if (dead) return;
+    ready = true;
+    shadowFrames = 6;
+    last = performance.now();
+    onReady();
+    if (q.textures) void sharpen();
+    else forget(used);
+  }
+
+  // The 2K photos, for the devices that get them. They arrive after the first picture
+  // and replace the 1K ones a piece at a time, each only once the scrolling has been
+  // still for a moment (or the intro is still in front), so a swap never lands in the
+  // middle of a turn. The cover is painted again last, and only while it is out of view.
+  let moved = 0;
+  const still = async (alsoHidden = false) => {
+    for (;;) {
+      if (dead) return false;
+      const quiet = performance.now() - moved > 500;
+      if (!active || (quiet && (!alsoHidden || open > 0.97))) return true;
+      await new Promise((r) => window.setTimeout(r, 250));
+    }
+  };
+  async function sharpen() {
+    try {
+      for (const { t, url } of better) {
+        used.push(url);
+        const p = await picture(url, true);
+        if (!(await still())) return;
+        t.dispose(); // lets go of the 1K storage; the texture itself lives on at the new size
+        put(t, p);
+        renderer.initTexture(t);
+        shadowFrames = Math.max(shadowFrames, 1);
+        await pause();
+      }
+      close(better.map((b) => b.t));
+      const maps = await paintCover("_2k");
+      if (!(await still(true))) return;
+      wearCover(maps);
+      for (const t of Object.values(cover)) {
+        renderer.initTexture(t);
+        await pause();
+      }
+      shadowFrames = Math.max(shadowFrames, 1);
+    } catch {
+      // the 1K picture stays; it is a fine picture
+    } finally {
+      forget(used);
+    }
+  }
+
   return {
     set,
     view: measure,
@@ -828,13 +1025,15 @@ export function build(canvas: HTMLCanvasElement, q: Quality, opts: SceneOpts): S
       active = on;
       if (on) shadowFrames = 2;
     },
+    get ready() {
+      return ready;
+    },
     dispose: () => {
       dead = true;
       window.clearTimeout(resizeTimer);
       observer.disconnect();
       garden?.dispose();
       book.dispose();
-      if (cover) Object.values(cover).forEach((t) => t.dispose());
       scene.environment?.dispose();
       disposables.forEach((d) => d.dispose());
       renderer.dispose();

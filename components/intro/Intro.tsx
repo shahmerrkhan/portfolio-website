@@ -71,7 +71,7 @@ function grainTile() {
 type Props = {
   still: boolean; // reduced motion: one calm frame, no flight, no portal
   flashes: boolean; // false for reduced motion and slow devices: the storm without lightning
-  onDone: () => void;
+  onDone: (skipped: boolean) => void;
 };
 
 export default function Intro({ still, flashes, onDone }: Props) {
@@ -79,6 +79,7 @@ export default function Intro({ still, flashes, onDone }: Props) {
   const actions = useRef({ begin: () => {}, skip: () => {} });
   const [stage, setStage] = useState<Stage>("gate");
   const [line, setLine] = useState(-1);
+  const [skipped, setSkipped] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -87,17 +88,19 @@ export default function Intro({ still, flashes, onDone }: Props) {
     const cloudDir = `/frames/clouds${tall ? "-tall" : ""}`;
     const portalDir = `/frames/portal${tall ? "-tall" : ""}`;
     const clouds = new Clip(cloudDir, true);
-    const portal = new Clip(portalDir);
+    const portal = new Clip(portalDir, false, 0, true); // not needed for twenty seconds: behind everything else in the queue
     const layers = new Map<string, { clip: Clip; first: number }>();
     const grain = still ? null : grainTile();
     const grainPattern = grain && ctx ? ctx.createPattern(grain, "repeat") : null;
 
     // Clouds first, so there is something to look at straight away. The lightning comes
     // down alongside, in the order it fires, then the portal.
+    let gone = false;
     const addLayers = async (clip: Clip, dir: string, wanted: (name: string) => boolean) => {
       for (const layer of clip.layers) {
+        if (gone) return; // the intro is over: nothing more is fetched
         if (!wanted(layer.name)) continue;
-        const made = new Clip(`${dir}/${layer.name}`, false, layer.count);
+        const made = new Clip(`${dir}/${layer.name}`, false, layer.count, true);
         layers.set(layer.name, { clip: made, first: layer.first });
         await made.load();
       }
@@ -106,6 +109,7 @@ export default function Intro({ still, flashes, onDone }: Props) {
       await clouds.open();
       if (still) return clouds.load(STILL_FRAME);
       await Promise.all([clouds.load(), addLayers(clouds, cloudDir, (name) => flashes || name === "eye")]);
+      if (gone) return;
       await portal.load();
       if (flashes) await addLayers(portal, portalDir, () => true);
     })();
@@ -133,14 +137,25 @@ export default function Intro({ still, flashes, onDone }: Props) {
       now = next;
       setStage(next);
     };
-    const finish = () => {
+    const finish = (skipped = false) => {
       if (now === "out") return;
+      // whatever of the intro has not arrived is not needed now: leave the line to the garden
+      gone = true;
+      clouds.halt();
+      portal.halt();
+      layers.forEach((l) => l.clip.halt());
+      if (skipped) {
+        setSkipped(true);
+        // the rest of the voiceover is not going to be heard: stop downloading it
+        voice.removeAttribute("src");
+        voice.load();
+      }
       voice.pause();
       if (ducking) sound.duck(false);
       ducking = false;
       sound.stopStorm(now === "portal" ? 1.2 : 0.3);
       go("out");
-      onDone();
+      onDone(skipped);
     };
     const toPortal = () => {
       if (ducking) sound.duck(false);
@@ -182,7 +197,7 @@ export default function Intro({ still, flashes, onDone }: Props) {
       skip: () => {
         sound.stopSwoosh(); // skipped part-way through the portal: the swoosh goes too
         sound.stopStorm(0.3); // and the thunder and the wind
-        finish();
+        finish(true);
       },
     };
 
@@ -335,7 +350,7 @@ export default function Intro({ still, flashes, onDone }: Props) {
   }, [still, flashes, onDone]);
 
   return (
-    <div className="intro" data-stage={stage} aria-hidden={stage === "out"}>
+    <div className="intro" data-stage={stage} data-skipped={skipped} aria-hidden={stage === "out"}>
       <canvas ref={canvasRef} className="intro-canvas" aria-hidden="true" />
       {stage === "gate" && (
         <button type="button" className="gate" onClick={() => actions.current.begin()} autoFocus>

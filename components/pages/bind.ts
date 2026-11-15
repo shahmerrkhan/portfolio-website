@@ -91,9 +91,13 @@ export function place(spreads: Spread[], g: Geometry, show: Show) {
     s.was = now;
     if (ink <= 0.001) {
       s.root.style.visibility = "hidden";
+      s.left.style.willChange = s.right.style.willChange = ""; // a page out of view keeps no layer of its own
       return;
     }
-    s.root.style.visibility = "visible";
+    if (s.root.style.visibility !== "visible") {
+      s.root.style.visibility = "visible";
+      s.left.style.willChange = s.right.style.willChange = "transform, opacity";
+    }
     s.root.style.pointerEvents = ink > 0.6 ? "" : "none";
     s.right.style.transform = right;
     s.left.style.transform = left;

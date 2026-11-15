@@ -45,6 +45,7 @@ const state = {
   song: null as number | null,
   left: [] as Source[], // sources not tried yet for this song
   watch: 0,
+  muted: false, // the site's mute switch; the page keeps this in step (see Page5)
   tell: (() => {}) as (e: Event) => void,
   report: null as Report | null,
   watchers: new Set<() => void>(),
@@ -140,6 +141,7 @@ export const player = {
     state.song = i;
     audio.preload = "auto";
     audio.volume = VOLUME;
+    audio.muted = state.muted;
 
     const canPlay = Object.fromEntries([...AAC, MP3].map((t) => [t, audio.canPlayType(t) || "no"]));
     const aac = AAC.some((t) => audio.canPlayType(t) !== "");
@@ -179,6 +181,38 @@ export const player = {
   },
   stop() {
     drop();
+  },
+  // Stop with a short fade instead of a cut, for when the notebook is closed under a
+  // playing song. The page is told at once, so the play button and the card go back to
+  // rest straight away; the sound itself takes `ms` to die away. (An iPhone does not let
+  // a page set an element's volume, so there it simply stops when the time is up.)
+  fadeOut(ms = 350) {
+    const old = state.audio;
+    if (!old) return;
+    note({}, "faded out: the notebook was closed");
+    window.clearTimeout(state.watch);
+    state.audio = null;
+    state.song = null;
+    state.tell({ kind: "stop" });
+    const from = old.volume;
+    const began = performance.now();
+    const step = () => {
+      const left = 1 - (performance.now() - began) / ms;
+      if (left > 0) {
+        old.volume = from * left;
+        window.setTimeout(step, 30);
+        return;
+      }
+      old.pause();
+      old.removeAttribute("src");
+      old.load();
+    };
+    step();
+  },
+  // the site's mute switch covers the songs too
+  mute(on: boolean) {
+    state.muted = on;
+    if (state.audio) state.audio.muted = on;
   },
   listen(tell: (e: Event) => void) {
     state.tell = tell;

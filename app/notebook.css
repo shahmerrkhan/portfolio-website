@@ -33,7 +33,10 @@
   height: var(--ph);
   overflow: hidden;
   mix-blend-mode: multiply;
-  will-change: transform, opacity;
+  /* nothing inside a page can change the layout of anything outside it, so fitting one
+   * page's type never makes the browser lay the other thirteen out again. (The script
+   * gives the two pages in view their own layer while they are in view, and only then.) */
+  contain: layout paint;
 }
 
 .side.right {
@@ -73,8 +76,7 @@
   margin-bottom: 0.7em;
 }
 
-.notebook[data-single="true"] .side.title-only,
-.notebook[data-single="true"] .wide-only {
+.notebook[data-single="true"] .side.title-only {
   display: none;
 }
 
@@ -390,8 +392,14 @@
 
 .p-believe ul {
   display: grid;
-  gap: 1.3em;
-  padding-top: 1.4em;
+  gap: 1.1em;
+  padding-top: 1em;
+}
+
+/* the GitHub graph sits under the three lines, on the same page */
+.p-believe .heading {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
 }
 
 .p-believe li {
@@ -521,64 +529,50 @@
   fill: var(--ink);
 }
 
-.shelves {
-  display: grid;
-  gap: 0.9em;
-}
-
-/* a board with ten spines standing on it */
+/* The bookshelf: one picture of real spines on two boards, with a clear button over each
+ * book. Like everything else on the page it is multiplied onto the paper, so the page's
+ * grain and the garden's light and leaf shade fall across the books too. */
+/* Its width is in ems, so when the page's type is made smaller to fit, the shelf gives
+ * up its share of the room too and the hobbies under it are not squeezed alone. */
 .shelf {
-  display: flex;
-  align-items: flex-end;
-  gap: 1.3%;
-  height: 4.4em;
-  padding: 0 2.5%;
-  border-bottom: 0.4em solid #6f4a2a;
-  box-shadow: 0 0.4em 0.3em -0.22em rgba(40, 22, 6, 0.55);
-}
-
-.shelf li {
   position: relative;
-  flex: var(--thick) 1 0;
-  height: var(--tall);
-  background: var(--cloth);
-  border-radius: 2px 2px 0 0;
-  box-shadow:
-    inset -0.22em 0 0.25em rgba(0, 0, 0, 0.32),
-    inset 0.12em 0 0.1em rgba(255, 255, 255, 0.14);
-  transform: rotate(var(--lean));
-  transform-origin: 50% 100%;
-  transition: transform 0.18s ease;
+  width: min(100%, 16.5em);
+  margin: -0.3em auto 0;
+  contain: layout;
 }
 
-/* the gilt bands every cloth spine has */
-.shelf li::before,
-.shelf li::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: rgba(226, 196, 120, 0.85);
-}
-.shelf li::before {
-  top: 13%;
-}
-.shelf li::after {
-  bottom: 15%;
+.shelf img {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .shelf button {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  z-index: 1;
+  border-radius: 2px;
+  background-image: none;
+  background-repeat: no-repeat;
+  transition: translate 0.18s ease;
 }
 
-/* the picked book is pulled a little way out */
-.shelf li:has(button[aria-pressed="true"]),
-.shelf li:hover {
-  transform: rotate(var(--lean)) translateY(-0.55em);
+/* A standing book that is picked (or under the pointer) comes part-way out: the button
+ * shows that book again, cut from the same picture, a little higher. */
+.shelf button[data-pose="up"][aria-pressed="true"],
+.shelf button[data-pose="up"]:hover {
+  background-image: url("/shelf/books.webp");
+  translate: 0 -7%;
+}
+
+/* A leaning or lying book cannot slide up: it gets a pencil line round it instead. */
+.shelf button:not([data-pose="up"])[aria-pressed="true"],
+.shelf button:not([data-pose="up"]):hover {
+  box-shadow:
+    0 0 0 1.5px rgba(42, 30, 20, 0.75),
+    0 0 0 3px rgba(240, 228, 201, 0.5);
+}
+
+.shelf button:focus-visible {
+  outline-offset: 1px;
 }
 
 .book-note {
@@ -599,21 +593,36 @@
   color: var(--ink-soft);
 }
 
+/* three short groups, each a run of handwriting under a small pencil label */
 .hobbies {
+  display: grid;
+  gap: 0.4em;
+}
+
+.hobbies h3 {
+  font-family: var(--font-scrawl);
+  font-size: 1.1em;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--pencil);
+}
+
+.hobbies ul {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.5em 1em;
+  gap: 0.24em 0.85em;
 }
 
 .hobbies li {
-  transform: rotate(var(--tilt, 0deg));
+  rotate: var(--tilt, 0deg);
   font-weight: 600;
+  line-height: 1.1;
 }
 
 .hobbies li[data-hand="1"] {
   font-family: var(--font-scrawl);
-  font-size: 1.35em;
+  font-size: 1.3em;
   font-weight: 400;
   line-height: 0.95;
   color: var(--ink-blue);
@@ -621,9 +630,9 @@
 
 .hobbies li[data-hand="2"] {
   font-family: var(--font-script);
-  font-size: 0.74em;
+  font-size: 0.7em;
   font-weight: 400;
-  line-height: 1.7;
+  line-height: 1.6;
 }
 
 /* ---------- page 6 ---------- */
@@ -856,6 +865,12 @@
   font-size: 1.05em;
   line-height: 1;
   color: var(--pencil);
+}
+
+.when .dash {
+  display: inline-block;
+  margin: 0 0.3em;
+  transform: scaleX(2.8);
 }
 
 .jobs {

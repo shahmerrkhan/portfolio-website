@@ -1,7 +1,7 @@
 // The mute switch, the garden loop, the portal swoosh, and the storm (wind and thunder).
 // Browser only. Nothing here makes a noise until a tap has happened.
 // The songs are not in here: they are plain <audio> elements (see lib/player.ts) and
-// nothing in this file touches their sound.
+// nothing in this file touches their sound. It only gets out of their way (see `song`).
 
 const GARDEN = "/audio/garden.mp3";
 const LEVEL = 0.5; // the garden sits well under the voiceover and the songs
@@ -10,6 +10,7 @@ const KEY = "sound-off";
 let muted = false;
 let read = false;
 let ducked = 0; // how many things are talking over the garden right now
+let song = false; // a song is playing: the garden goes right out, not just down
 let ctx: AudioContext | null = null;
 let gain: GainNode | null = null;
 let started = false;
@@ -27,7 +28,7 @@ function load() {
 }
 
 function level() {
-  return muted ? 0 : ducked > 0 ? LEVEL * 0.2 : LEVEL;
+  return muted || song ? 0 : ducked > 0 ? LEVEL * 0.2 : LEVEL;
 }
 
 // One audio context for the visit. Browsers only let it run after a tap.
@@ -276,7 +277,9 @@ export const sound = {
       gain = ctx.createGain();
       gain.gain.value = 0;
       gain.connect(ctx.destination);
-      const data = await (await fetch(GARDEN)).arrayBuffer();
+      // behind the garden's own photos in the queue: the birds can start a moment after
+      // the notebook, the notebook should not wait for the birds
+      const data = await (await fetch(GARDEN, { priority: "low" })).arrayBuffer();
       const buffer = await ctx.decodeAudioData(data);
       const source = ctx.createBufferSource();
       source.buffer = buffer;
@@ -287,11 +290,28 @@ export const sound = {
       source.connect(gain);
       source.start(0, 0.06);
       settle(2.5);
+      listeners.forEach((l) => l());
     } catch {
       started = false; // no sound is fine; the site works without it
     }
   },
-  // while the voiceover or a song plays, the garden drops back
+  // While a song plays the garden is silent, so only the song is heard: out quickly when
+  // one starts, back more slowly once nothing is playing. It is a plain yes or no, so
+  // going from one song straight to another never lets the birds back in between. The
+  // mute switch still wins: level() is zero while muted whatever this says.
+  song(on: boolean) {
+    if (song === on) return;
+    song = on;
+    settle(on ? 0.4 : 0.8);
+    listeners.forEach((l) => l());
+  },
+  // for the debug panel: what the garden loop is being held at, and why
+  get garden() {
+    load();
+    if (!started) return "not started";
+    return muted ? "silent (site muted)" : song ? "silent (a song is playing)" : ducked > 0 ? "low (voiceover)" : "playing";
+  },
+  // while the voiceover plays, the garden drops back
   duck(on: boolean) {
     ducked = Math.max(0, ducked + (on ? 1 : -1));
     settle(0.5);

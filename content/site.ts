@@ -14,6 +14,7 @@ export const links: Record<string, string> = {
   "Magic Hour": "https://magichour.ai",
   "Next Generation Hacks": "https://www.ngnhacks.ca",
   Unbound: "https://www.becomeunbound.org",
+  Sportiner: "https://apps.apple.com/ca/app/sportiner/id6758223656",
 };
 
 // The voiceover. `cues` is the second each line starts being spoken, measured from the
@@ -66,55 +67,87 @@ export const projects: Project[] = [
 
 // name: the organisation (a link if it is in `links`). tag: plain text after the name.
 // logo: a file in public/logos, fetched from the organisation's own site.
+// start and end are "YYYY-MM". Leave `end` out while the role is still going: the card
+// then says "Present". Do not write the dates out by hand and do not add durations
+// ("3 mos" goes stale); `when()` below writes them the way LinkedIn does.
 export type Experience = {
   name: string;
   tag?: string;
   role?: string;
-  current?: boolean;
-  when?: string;
+  start: string;
+  end?: string;
   where?: string;
   line: string;
   logo?: { src: string; wide?: boolean };
 };
 
-// Newest first: the current one, then by date; the two without dates last.
-export const experience: Experience[] = [
+// In any order: `experience` below sorts them. Add a new one anywhere in this list.
+const roles: Experience[] = [
   {
     name: "Magic Hour",
     tag: "(YC W24)",
     role: "AI/ML Prototyping",
-    current: true,
-    line: "Clip-extraction pipeline and scene-based reframing, generation time cut from 30+ min to about 6 min on an L4 GPU. Benchmarked against Opus Clip, and my clipper runs faster.",
+    start: "2026-09",
+    where: "Remote",
+    line: "Clip-extraction pipeline and scene-based reframing. Cut generation time from 30+ min to about 6 min on an L4 GPU, and benchmarked it against Opus Clip, where it generated clips faster.",
     logo: { src: "/logos/magic-hour.svg" },
+  },
+  {
+    name: "Unbound",
+    start: "2026-09",
+    where: "Remote",
+    line: "Ran an event at Waterloo Tech Week (72 hrs, all spots filled), partnered with YPLS on a 500+ person summit, and currently sponsoring Terminal X26, a hackathon backed by 4 YC companies.",
+    logo: { src: "/logos/unbound.svg", wide: true },
+  },
+  {
+    name: "Sportiner",
+    role: "Software Engineer",
+    start: "2026-08",
+    line: "Worked on a live product with 300+ users, shipping features straight to production alongside the co-founder.",
   },
   {
     name: "McMaster University",
     role: "Leader In Training (LIT)",
-    when: "Aug 2026, 1 month",
+    start: "2026-08",
+    end: "2026-08",
     where: "Hamilton, Ontario",
     line: "Mentored Grade 6-8 students one-on-one at McMaster's summer engineering camp. Ran robotics and Arduino labs.",
     logo: { src: "/logos/mcmaster.svg" },
   },
   {
-    name: "Prettiflow",
-    role: "FlowHouse Builder, Cohort 1",
-    when: "May 2026 to Jun 2026, 2 months",
-    where: "Remote",
-    line: "One of 200 builders picked for Cohort 1. Built and shipped Spiral, a goal tracking app, in one week.",
-    logo: { src: "/logos/prettiflow.svg" },
-  },
-  {
-    name: "Unbound",
-    line: "Ran an event at Waterloo Tech Week (72 hrs, all spots filled), partnered with YPLS on a 500+ person summit, and currently sponsoring Terminal X26, a hackathon backed by 4 YC companies.",
-    logo: { src: "/logos/unbound.svg", wide: true },
-  },
-  {
     name: "Next Generation Hacks",
+    start: "2026-04",
+    end: "2026-08",
+    where: "Remote",
     line: "Worldwide online hackathon for high schoolers, built with York University and Y Space. 342 participants across 35+ countries, and $25K CAD in sponsor value from companies like Mozilla and Siemens.",
     // the owl from their site, on its own; their square badge (next-generation-hacks.webp) is a blur at this size
     logo: { src: "/logos/next-generation-hacks-owl.webp" },
   },
+  {
+    name: "Prettiflow",
+    role: "FlowHouse Builder, Cohort 1",
+    start: "2026-05",
+    end: "2026-06",
+    where: "Remote",
+    line: "One of 200 builders picked for Cohort 1. Built and shipped Spiral, a goal tracking app, in one week.",
+    logo: { src: "/logos/prettiflow.svg" },
+  },
 ];
+
+// The order on the page, newest at the top and oldest at the bottom: roles still going
+// first (the one that started last on top), then finished ones by when they ended (the
+// most recent first; if two ended together, the one that started later goes first).
+// "YYYY-MM" sorts correctly as plain text.
+const newest = (a: string, b: string) => (a < b ? 1 : a > b ? -1 : 0);
+export const experience: Experience[] = [...roles].sort((a, b) => {
+  if (!a.end !== !b.end) return a.end ? 1 : -1;
+  return (a.end && b.end ? newest(a.end, b.end) : 0) || newest(a.start, b.start);
+});
+
+// "Sep 2026 - Present", "May 2026 - Jun 2026", or just "Aug 2026" when it began and ended in one month.
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const month = (ym: string) => `${MONTHS[Number(ym.slice(5, 7)) - 1]} ${ym.slice(0, 4)}`;
+export const when = (e: Experience) => (!e.end ? `${month(e.start)} - Present` : e.end === e.start ? month(e.start) : `${month(e.start)} - ${month(e.end)}`);
 
 export const beliefs = [
   "I believe in love for everyone.",
@@ -155,23 +188,32 @@ export const books: { title: string; author?: string }[] = [
   { title: "And the Mountains Echoed" },
 ];
 
-export const hobbies = [
-  "gym",
-  "reading and poetry",
-  "love for everyone",
-  "walks",
-  "meeting new people and hearing their stories",
-  "hanging out with friends",
-  "running",
-  "soccer",
-  "photography",
-  "drawing (used to)",
-  "chess (a little)",
-  "gaming (used to)",
-  "swimming (a little)",
-  "really want to learn guitar",
-  "deep conversations",
-  'down for anything ("hit me up")',
+// In Shahmeer's words, from his own list. The brackets are his: keep them honest.
+// Grouped so the page reads in three short breaths, not one long cloud.
+export const hobbies: { label: string; items: string[] }[] = [
+  {
+    label: "these days",
+    items: [
+      "reading and poetry",
+      "love for everyone, and love in general",
+      "walks",
+      "meeting new people and hearing their stories",
+      "hanging out with friends",
+      "running",
+      "soccer",
+      "taking pics of myself (not professional)",
+      "deep conversations",
+      'down for anything ("hit me up")',
+    ],
+  },
+  {
+    label: "a little, or used to",
+    items: ["gym (haven't gone in a while)", "drawing (used to)", "chess (a little)", "big gamer (used to be)", "swimming (a little)"],
+  },
+  {
+    label: "someday",
+    items: ["really want to learn guitar", "want to try modelling (no idea how to start)"],
+  },
 ];
 
 // Final wording of the story page still needs Shahmeer's approval.
@@ -194,8 +236,8 @@ export const secrets = [
 export const pages = [
   { id: "hi", tab: "hi", name: "intro" },
   { id: "story", tab: "story", name: "my story" },
-  { id: "work", tab: "work", name: "projects, experience and GitHub" },
-  { id: "believe", tab: "believe", name: "what I believe" },
+  { id: "work", tab: "work", name: "projects and experience" },
+  { id: "believe", tab: "believe", name: "more experience, what I believe and GitHub" },
   { id: "fun", tab: "fun", name: "songs, books and hobbies" },
   { id: "guestbook", tab: "guestbook", name: "guestbook" },
   { id: "secrets", tab: "secrets", name: "garden secrets" },
@@ -207,9 +249,9 @@ export const words = {
   soundOn: "sound on",
   soundOff: "sound off",
   openHint: "scroll to open it",
+  loading: "opening the notebook...",
   projects: "projects",
   experience: "experience",
-  current: "current",
   github: "github",
   githubTotal: (n: number) => `${n} contributions in the last year`,
   githubDown: "The graph won't load right now. It's all on my GitHub.",
@@ -220,6 +262,7 @@ export const words = {
   playing: "playing",
   songFailed: "This one won't play in your browser.",
   songAgain: "tap again",
+  songMuted: "sound is off",
   books: "Some books I've read",
   hobbies: "hobbies",
   guestbook: "guestbook",
