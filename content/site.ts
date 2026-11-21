@@ -66,7 +66,7 @@ export const projects: Project[] = [
 ];
 
 // name: the organisation (a link if it is in `links`). tag: plain text after the name.
-// logo: a file in public/logos, fetched from the organisation's own site.
+// logo: a file in public/logos, fetched from the organisation's own site (or its app icon).
 // start and end are "YYYY-MM". Leave `end` out while the role is still going: the card
 // then says "Present". Do not write the dates out by hand and do not add durations
 // ("3 mos" goes stale); `when()` below writes them the way LinkedIn does.
@@ -104,6 +104,8 @@ const roles: Experience[] = [
     role: "Software Engineer",
     start: "2026-08",
     line: "Worked on a live product with 300+ users, shipping features straight to production alongside the co-founder.",
+    // their App Store icon, the white square taken out so the rings sit on the paper like the other logos
+    logo: { src: "/logos/sportiner.webp" },
   },
   {
     name: "McMaster University",
