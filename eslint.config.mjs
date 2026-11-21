@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // the chat's vendored runtime, copied in by scripts/chat/fetch-model.mjs
+    "public/chat/transformers.js",
+    "public/chat/ort/**",
   ]),
 ]);
 

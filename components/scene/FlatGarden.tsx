@@ -5,6 +5,7 @@ import Notebook, { stopsFor } from "@/components/pages/Notebook";
 import { collect, fit, forget, place, setSizes, type Geometry } from "@/components/pages/bind";
 import { BookContext } from "@/components/pages/context";
 import Tabs from "@/components/ui/Tabs";
+import { bookNav } from "@/lib/bookNav";
 import { words } from "@/content/site";
 import type { Stop } from "@/lib/scrollPlan";
 import still from "./still.json";
@@ -143,6 +144,12 @@ export default function FlatGarden({ shown, calm }: { shown: boolean; calm: bool
     const s = state.current;
     return () => cancelAnimationFrame(s.frame);
   }, []);
+
+  // the chat bubble shows once the book does, and its slash commands use the tabs' jump
+  useEffect(() => {
+    if (!shown) return;
+    return bookNav.register((n) => go(stops.findIndex((s) => s.page === n)));
+  }, [shown, go, stops]);
 
   const m = tall ? still.tall : still.wide;
   return (

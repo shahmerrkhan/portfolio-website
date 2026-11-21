@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prebuild": "node --no-warnings --import ./scripts/chat/ts.mjs scripts/chat/check.mjs",
+    "chat:model": "node scripts/chat/fetch-model.mjs",
+    "chat:embed": "node --no-warnings --import ./scripts/chat/ts.mjs scripts/chat/embed.mjs",
+    "chat:test": "node --no-warnings --import ./scripts/chat/ts.mjs scripts/chat/test.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.1",
@@ -18,6 +22,7 @@
     "three": "^0.187.0"
   },
   "devDependencies": {
+    "@huggingface/transformers": "^4.3.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

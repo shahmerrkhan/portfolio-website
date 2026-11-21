@@ -5,6 +5,7 @@ import Notebook, { stopsFor } from "@/components/pages/Notebook";
 import { collect, fit, forget, place, setSizes } from "@/components/pages/bind";
 import { BookContext } from "@/components/pages/context";
 import Tabs from "@/components/ui/Tabs";
+import { bookNav } from "@/lib/bookNav";
 import { secrets, words } from "@/content/site";
 import { player } from "@/lib/player";
 import { leafOf, locate, makePlan } from "@/lib/scrollPlan";
@@ -235,6 +236,13 @@ export default function GardenScene({ shown, onFail, still = false }: { shown: b
     shownNow.current = shown;
     control.current?.show(shown);
   }, [shown]);
+
+  // Once the book is really on screen the chat bubble appears, and its slash commands
+  // turn pages the same way the tabs do.
+  useEffect(() => {
+    if (!shown || !ready || still) return;
+    return bookNav.register((n) => control.current?.go(n));
+  }, [shown, ready, still]);
 
   const reveal = (i: number) => {
     control.current?.poke(i);
